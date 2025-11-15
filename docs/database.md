@@ -10,7 +10,7 @@ The relational model in `papertrail-app/prisma/schema.prisma` mirrors the UML an
 | `User` | Person attributes; `roleId` is the only foreign key. Attributes such as `email`, `affiliation`, `orcid` describe the user and depend solely on the primary key (`id`). |
 | `Paper` | Metadata about a manuscript. Derived values (e.g., venue name, contact author info) are intentionally moved to `Venue` and `User` to avoid duplication. Soft deletes use `isDeleted` to keep history without physical removal. |
 | `Venue` | Publication venues with optional type/ranking fields. |
-| `Authorship` | Intersection (many-to-many) between papers and users with author order & notes. Composite uniqueness on (`paperId`,`userId`) prevents duplicates. |
+| `Authorship` | Intersection (many-to-many) between papers and users with author order & notes. Composite uniqueness on (`paperId`,`userId`) prevents duplicates. Author order defaults are now computed in the `sp_assign_author` stored procedure to keep rule enforcement in the database layer without relying on triggers. |
 | `Topic` / `PaperTopic` | Topic dictionary plus junction table so papers can carry many tags without repeating topic strings. |
 | `Grant` / `PaperGrant` | Funding opportunities and their linkage to papers. Reporting metadata is stored at the `Grant` level, not paper level, to keep dependencies clean. |
 | `Revision` | Version history keyed by paper + optional author. Notes belong to a revision only. |
@@ -30,7 +30,6 @@ Triggers and events ensure the DB itself maintains invariants:
 
 - `trg_revision_activity` writes audit records whenever a revision is inserted (even through direct SQL, e.g., imports).
 - `trg_prevent_paper_delete` enforces soft deletes by rejecting raw `DELETE` statements.
-- `trg_authorship_default_order` auto-assigns the next author order when omitted.
 - `evt_flag_overdue_grants` and `evt_log_stale_drafts` run on schedules to keep grant reporting requirements and stale drafts visible.
 
 Remember to enable the MySQL event scheduler (`SET GLOBAL event_scheduler = ON;`)—the SQL script already does this after creating the events.
@@ -44,7 +43,7 @@ The SQL script also configures MySQL roles so permissions match application role
 - `role_contributor` – can record revisions and read data.
 - `role_viewer` – read-only via `sp_get_paper_overview`.
 
-Example users (`papertrail_admin`, `papertrail_pi`, `papertrail_contrib`, `papertrail_viewer`) are created with default passwords. Swap them before deploying to prod.
+Example users (`papertrail_admin`, `papertrail_pi`, `papertrail_contrib`, `papertrail_viewer`) are created with random, expired passwords that are printed when the script finishes (or you can set session variables such as `@papertrail_admin_password` beforehand). Rotate them immediately after running the script.
 
 ## How to run the database objects locally
 
