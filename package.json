@@ -1,0 +1,10 @@
+{
+  "name": "papertrail-monorepo",
+  "private": true,
+  "scripts": {
+    "prepare": "husky install && git config core.hooksPath .husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

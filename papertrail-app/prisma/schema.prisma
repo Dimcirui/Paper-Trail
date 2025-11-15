@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id       Int    @id @default(autoincrement())
+  roleName String @unique
+  users    User[]
+}
+
+model User {
+  id             Int           @id @default(autoincrement())
+  userName       String
+  email          String        @unique
+  password       String
+  affiliation    String?
+  orcid          String?
+  roleId         Int
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  role           Role          @relation(fields: [roleId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+  authoredPapers Authorship[]
+  primaryPapers  Paper[]       @relation("PaperPrimaryContact")
+  revisions      Revision[]
+  activityLogs   ActivityLog[]
+
+  @@index([roleId], map: "idx_user_role")
+}
+
+model Paper {
+  id               Int            @id @default(autoincrement())
+  title            String
+  abstract         String?
+  status           PaperStatus    @default(Draft)
+  submissionDate   DateTime?
+  publicationDate  DateTime?
+  pdfUrl           String?
+  isDeleted        Boolean        @default(false)
+  primaryContactId Int
+  venueId          Int?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  primaryContact   User           @relation("PaperPrimaryContact", fields: [primaryContactId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+  venue            Venue?         @relation(fields: [venueId], references: [id], onUpdate: Cascade, onDelete: SetNull)
+  authors          Authorship[]
+  topics           PaperTopic[]
+  grants           PaperGrant[]
+  revisions        Revision[]
+  activityLogs     ActivityLog[]
+
+  @@index([status], map: "idx_paper_status")
+  @@index([primaryContactId], map: "idx_paper_primary_contact")
+  @@index([venueId], map: "idx_paper_venue")
+}
+
+model Venue {
+  id        Int     @id @default(autoincrement())
+  venueName String  @unique
+  type      String?
+  ranking   String?
+  papers    Paper[]
+}
+
+model Authorship {
+  id                 Int      @id @default(autoincrement())
+  authorOrder        Int      @default(1)
+  contributionNotes  String?
+  paperId            Int
+  userId             Int
+  createdAt          DateTime @default(now())
+  paper              Paper    @relation(fields: [paperId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  user               User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+
+  @@unique([paperId, userId])
+  @@index([paperId, authorOrder], map: "idx_authorship_order")
+}
+
+model Topic {
+  id        Int          @id @default(autoincrement())
+  topicName String       @unique
+  papers    PaperTopic[]
+}
+
+model PaperTopic {
+  id       Int   @id @default(autoincrement())
+  paperId  Int
+  topicId  Int
+  paper    Paper @relation(fields: [paperId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  topic    Topic @relation(fields: [topicId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+
+  @@unique([paperId, topicId])
+  @@index([topicId], map: "idx_paper_topic_topic")
+}
+
+model Grant {
+  id                     Int          @id @default(autoincrement())
+  grantName              String
+  sponsor                String?
+  startDate              DateTime?
+  endDate                DateTime?
+  reportingRequirements  String?
+  papers                 PaperGrant[]
+
+  @@unique([grantName, sponsor])
+}
+
+model PaperGrant {
+  id       Int   @id @default(autoincrement())
+  paperId  Int
+  grantId  Int
+  paper    Paper @relation(fields: [paperId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  grant    Grant @relation(fields: [grantId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+
+  @@unique([paperId, grantId])
+  @@index([grantId], map: "idx_paper_grant_grant")
+}
+
+model Revision {
+  id           Int      @id @default(autoincrement())
+  paperId      Int
+  versionLabel String
+  notes        String?
+  createdAt    DateTime @default(now())
+  authorId     Int?
+  paper        Paper    @relation(fields: [paperId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  author       User?    @relation(fields: [authorId], references: [id], onUpdate: Cascade, onDelete: SetNull)
+
+  @@index([paperId], map: "idx_revision_paper")
+  @@index([authorId], map: "idx_revision_author")
+}
+
+model ActivityLog {
+  id           Int      @id @default(autoincrement())
+  paperId      Int
+  userId       Int?
+  actionType   String
+  actionDetail String?
+  timestamp    DateTime @default(now())
+  paper        Paper    @relation(fields: [paperId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  user         User?    @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: SetNull)
+
+  @@index([paperId], map: "idx_activity_paper")
+  @@index([userId], map: "idx_activity_user")
+}
+
+enum PaperStatus {
+  Draft
+  Submitted
+  UnderReview
+  Accepted
+  Published
+  Rejected
+  Withdrawn
+}
