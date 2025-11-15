@@ -13,11 +13,30 @@ type PaperPayload = {
   venueId?: number;
 };
 
+const PAPER_STATUSES = [
+  "Draft",
+  "Submitted",
+  "UnderReview",
+  "Accepted",
+  "Published",
+  "Rejected",
+  "Withdrawn",
+] as const;
+
+type PaperStatus = (typeof PAPER_STATUSES)[number];
+const DEFAULT_PAPER_STATUS: PaperStatus = "Draft";
+
+const isPaperStatus = (value: unknown): value is PaperStatus =>
+  typeof value === "string" &&
+  PAPER_STATUSES.includes(value as PaperStatus);
+
 /**
  * Validates the request's Authorization header against the configured API_AUTH_TOKEN.
  *
  * @param req - The incoming NextRequest whose `Authorization` header will be checked.
- * @returns An object with `authorized: true` when the request is allowed; otherwise `authorized: false` and a `message` explaining the failure (e.g., missing header or invalid credentials). If `API_AUTH_TOKEN` is not set, authorization is treated as allowed and `authorized: true` is returned.
+ * @returns An object with `authorized: true` when the request is allowed; otherwise `authorized: false` and a `message`
+ * explaining the failure (e.g., missing header or invalid credentials). If `API_AUTH_TOKEN` is not set, authorization
+ * is treated as allowed and `authorized: true` is returned.
  */
 function authorizeRequest(req: NextRequest) {
   const token = process.env.API_AUTH_TOKEN;
@@ -36,9 +55,8 @@ function authorizeRequest(req: NextRequest) {
 }
 
 /**
- * Retrieve up to 10 most recently updated non-deleted papers, including venue, primary contact (userName and email), and topics.
- *
- * @returns A NextResponse JSON object containing `{ papers: Paper[] }` on success; a 401 JSON error response when authorization fails; or a 500 JSON error response if a database error occurs.
+ * Retrieve up to 10 most recently updated non-deleted papers, including venue, primary contact, and topics.
+ */
 export async function GET(req: NextRequest) {
   const auth = authorizeRequest(req);
   if (!auth.authorized) {
@@ -131,7 +149,7 @@ export async function POST(req: NextRequest) {
         abstract: payload.abstract ?? "",
         status: isPaperStatus(payload.status)
           ? payload.status
-          : PaperStatus.Draft,
+          : DEFAULT_PAPER_STATUS,
         submissionDate: payload.submissionDate
           ? new Date(payload.submissionDate)
           : null,
