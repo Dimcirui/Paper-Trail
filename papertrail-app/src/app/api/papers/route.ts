@@ -13,6 +13,12 @@ type PaperPayload = {
   venueId?: number;
 };
 
+/**
+ * Validates the request's Authorization header against the configured API_AUTH_TOKEN.
+ *
+ * @param req - The incoming NextRequest whose `Authorization` header will be checked.
+ * @returns An object with `authorized: true` when the request is allowed; otherwise `authorized: false` and a `message` explaining the failure (e.g., missing header or invalid credentials). If `API_AUTH_TOKEN` is not set, authorization is treated as allowed and `authorized: true` is returned.
+ */
 function authorizeRequest(req: NextRequest) {
   const token = process.env.API_AUTH_TOKEN;
   if (!token) {
@@ -29,6 +35,10 @@ function authorizeRequest(req: NextRequest) {
   return { authorized: true };
 }
 
+/**
+ * Retrieve up to 10 most recently updated non-deleted papers, including venue, primary contact (userName and email), and topics.
+ *
+ * @returns A NextResponse JSON object containing `{ papers: Paper[] }` on success; a 401 JSON error response when authorization fails; or a 500 JSON error response if a database error occurs.
 export async function GET(req: NextRequest) {
   const auth = authorizeRequest(req);
   if (!auth.authorized) {
@@ -63,6 +73,13 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/**
+ * Create a new paper from the request JSON payload and return the created paper.
+ *
+ * Validates authorization and required fields (`title`, `primaryContactId`), verifies that the referenced primary contact (and venue, if provided) exist, and inserts the paper with sensible defaults for optional fields.
+ *
+ * @returns `NextResponse` containing `{ paper }` with status `201` on success. Returns JSON `{ error }` with status `401` for missing/invalid authorization, `400` for validation or bad input (including invalid JSON or non-existent referenced records), or `500` for unexpected server/database errors.
+ */
 export async function POST(req: NextRequest) {
   const auth = authorizeRequest(req);
   if (!auth.authorized) {
