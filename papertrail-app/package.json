@@ -10,7 +10,8 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "prepare": "husky"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
@@ -25,6 +26,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
     "prisma": "^6.19.0",
     "tailwindcss": "^4",
     "typescript": "^5"

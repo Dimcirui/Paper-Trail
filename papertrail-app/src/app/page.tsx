@@ -1,7 +1,19 @@
 const quickLinks = [
-  { title: "Database Schema", body: "Review the Prisma schema before adding migrations or writing queries.", href: "/docs/data-model" },
-  { title: "API Routes", body: "Use the app router /api folder to colocate backend logic with UI.", href: "/docs/apis" },
-  { title: "Component Library", body: "Create shared UI building blocks in src/components to keep screens consistent.", href: "/docs/ui" },
+  {
+    title: "Database Schema",
+    body: "Review Prisma schema design patterns before writing migrations.",
+    href: "https://www.prisma.io/docs/concepts/components/prisma-schema",
+  },
+  {
+    title: "API Routes",
+    body: "Leverage the Next.js App Router and API routes doc to colocate backend logic.",
+    href: "https://nextjs.org/docs/app/building-your-application/routing/router-handlers",
+  },
+  {
+    title: "Prisma Patterns",
+    body: "Consult Prisma's docs for best practices on transactions, validation, and raw SQL.",
+    href: "https://www.prisma.io/docs",
+  },
 ];
 
 const roadmap = [
@@ -22,11 +34,11 @@ export default function Home() {
         </h1>
         <p className="mt-4 text-lg text-zinc-600">
           Manage the entire research-publication lifecycle in one relational platform.
-          This workspace wires up Next.js 14, Prisma, and MySQL so we can focus on
+          This workspace wires up Next.js 16, Prisma, and MySQL so we can focus on
           building secure CRUD flows and analytics for faculty and graduate teams.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm font-semibold">
-          <span className="rounded-full bg-white px-4 py-2 text-indigo-600 shadow">Next.js 14 App Router</span>
+          <span className="rounded-full bg-white px-4 py-2 text-indigo-600 shadow">Next.js 16 App Router</span>
           <span className="rounded-full bg-white px-4 py-2 text-indigo-600 shadow">Prisma + MySQL</span>
           <span className="rounded-full bg-white px-4 py-2 text-indigo-600 shadow">Chart.js Analytics</span>
         </div>
