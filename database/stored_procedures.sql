@@ -22,6 +22,16 @@ CREATE PROCEDURE sp_create_paper(
   IN p_actor_id INT
 )
 BEGIN
+  DECLARE v_paper_id INT;
+
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+    RESIGNAL;
+  END;
+
+  START TRANSACTION;
+
   INSERT INTO Paper (
     title,
     abstract,
@@ -42,10 +52,14 @@ BEGIN
     p_venue_id
   );
 
-  INSERT INTO ActivityLog (paperId, userId, actionType, actionDetail)
-  VALUES (LAST_INSERT_ID(), p_actor_id, 'PAPER_CREATED', CONCAT('Paper "', p_title, '" created via stored procedure.'));
+  SET v_paper_id = LAST_INSERT_ID();
 
-  SELECT * FROM Paper WHERE id = LAST_INSERT_ID();
+  INSERT INTO ActivityLog (paperId, userId, actionType, actionDetail)
+  VALUES (v_paper_id, p_actor_id, 'PAPER_CREATED', CONCAT('Paper "', p_title, '" created via stored procedure.'));
+
+  COMMIT;
+
+  SELECT * FROM Paper WHERE id = v_paper_id;
 END $$
 
 DROP PROCEDURE IF EXISTS sp_update_paper_status $$
@@ -55,6 +69,14 @@ CREATE PROCEDURE sp_update_paper_status(
   IN p_actor_id INT
 )
 BEGIN
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+    RESIGNAL;
+  END;
+
+  START TRANSACTION;
+
   UPDATE Paper
   SET status = p_new_status,
       updatedAt = NOW()
@@ -62,6 +84,8 @@ BEGIN
 
   INSERT INTO ActivityLog (paperId, userId, actionType, actionDetail)
   VALUES (p_paper_id, p_actor_id, 'PAPER_STATUS_UPDATED', CONCAT('Status changed to ', p_new_status));
+
+  COMMIT;
 END $$
 
 DROP PROCEDURE IF EXISTS sp_soft_delete_paper $$
@@ -70,6 +94,14 @@ CREATE PROCEDURE sp_soft_delete_paper(
   IN p_actor_id INT
 )
 BEGIN
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+    RESIGNAL;
+  END;
+
+  START TRANSACTION;
+
   UPDATE Paper
   SET isDeleted = TRUE,
       status = 'Withdrawn',
@@ -78,6 +110,8 @@ BEGIN
 
   INSERT INTO ActivityLog (paperId, userId, actionType, actionDetail)
   VALUES (p_paper_id, p_actor_id, 'PAPER_SOFT_DELETED', 'Soft delete requested via stored procedure.');
+
+  COMMIT;
 END $$
 
 DROP PROCEDURE IF EXISTS sp_assign_author $$
@@ -89,14 +123,36 @@ CREATE PROCEDURE sp_assign_author(
   IN p_actor_id INT
 )
 BEGIN
+  DECLARE v_author_order INT;
+
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+    RESIGNAL;
+  END;
+
+  START TRANSACTION;
+
+  SET v_author_order = COALESCE(
+    p_author_order,
+    (
+      SELECT IFNULL(MAX(authorOrder), 0) + 1
+      FROM Authorship
+      WHERE paperId = p_paper_id
+      FOR UPDATE
+    )
+  );
+
   INSERT INTO Authorship (paperId, userId, authorOrder, contributionNotes)
-  VALUES (p_paper_id, p_user_id, COALESCE(p_author_order, 1), p_notes)
+  VALUES (p_paper_id, p_user_id, v_author_order, p_notes)
   ON DUPLICATE KEY UPDATE
     authorOrder = VALUES(authorOrder),
     contributionNotes = VALUES(contributionNotes);
 
   INSERT INTO ActivityLog (paperId, userId, actionType, actionDetail)
   VALUES (p_paper_id, p_actor_id, 'AUTHORSHIP_UPDATED', CONCAT('Linked user ', p_user_id, ' to paper ', p_paper_id));
+
+  COMMIT;
 END $$
 
 DROP PROCEDURE IF EXISTS sp_record_revision $$
@@ -118,12 +174,22 @@ CREATE PROCEDURE sp_add_grant_to_paper(
   IN p_actor_id INT
 )
 BEGIN
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+    RESIGNAL;
+  END;
+
+  START TRANSACTION;
+
   INSERT INTO PaperGrant (paperId, grantId)
   VALUES (p_paper_id, p_grant_id)
   ON DUPLICATE KEY UPDATE grantId = VALUES(grantId);
 
   INSERT INTO ActivityLog (paperId, userId, actionType, actionDetail)
   VALUES (p_paper_id, p_actor_id, 'PAPER_GRANT_LINKED', CONCAT('Linked grant ', p_grant_id));
+
+  COMMIT;
 END $$
 
 DROP PROCEDURE IF EXISTS sp_get_paper_overview $$
@@ -204,20 +270,6 @@ BEGIN
     SET MESSAGE_TEXT = 'Papers use soft deletes. Call sp_soft_delete_paper instead.';
 END $$
 
-DROP TRIGGER IF EXISTS trg_authorship_default_order $$
-CREATE TRIGGER trg_authorship_default_order
-BEFORE INSERT ON Authorship
-FOR EACH ROW
-BEGIN
-  IF NEW.authorOrder IS NULL OR NEW.authorOrder < 1 THEN
-    SET NEW.authorOrder = (
-      SELECT IFNULL(MAX(authorOrder), 0) + 1
-      FROM Authorship
-      WHERE paperId = NEW.paperId
-    );
-  END IF;
-END $$
-
 DROP EVENT IF EXISTS evt_flag_overdue_grants $$
 CREATE EVENT evt_flag_overdue_grants
 ON SCHEDULE EVERY 1 DAY
@@ -269,16 +321,26 @@ GRANT EXECUTE ON PROCEDURE papertrail.sp_add_grant_to_paper TO 'role_research_ad
 GRANT EXECUTE ON PROCEDURE papertrail.sp_get_paper_overview TO 'role_research_admin', 'role_principal_investigator', 'role_contributor', 'role_viewer';
 GRANT EXECUTE ON PROCEDURE papertrail.sp_create_activity TO 'role_research_admin';
 
--- Example application users (adjust passwords in real deployments)
+-- Example application users (temporary passwords logged for immediate rotation)
 DROP USER IF EXISTS 'papertrail_admin'@'%';
 DROP USER IF EXISTS 'papertrail_pi'@'%';
 DROP USER IF EXISTS 'papertrail_contrib'@'%';
 DROP USER IF EXISTS 'papertrail_viewer'@'%';
 
-CREATE USER 'papertrail_admin'@'%' IDENTIFIED BY 'papertrail_admin';
-CREATE USER 'papertrail_pi'@'%' IDENTIFIED BY 'papertrail_pi';
-CREATE USER 'papertrail_contrib'@'%' IDENTIFIED BY 'papertrail_contrib';
-CREATE USER 'papertrail_viewer'@'%' IDENTIFIED BY 'papertrail_viewer';
+SET @papertrail_admin_password = COALESCE(@papertrail_admin_password, UUID());
+SET @papertrail_pi_password = COALESCE(@papertrail_pi_password, UUID());
+SET @papertrail_contrib_password = COALESCE(@papertrail_contrib_password, UUID());
+SET @papertrail_viewer_password = COALESCE(@papertrail_viewer_password, UUID());
+
+CREATE USER 'papertrail_admin'@'%' IDENTIFIED BY @papertrail_admin_password;
+CREATE USER 'papertrail_pi'@'%' IDENTIFIED BY @papertrail_pi_password;
+CREATE USER 'papertrail_contrib'@'%' IDENTIFIED BY @papertrail_contrib_password;
+CREATE USER 'papertrail_viewer'@'%' IDENTIFIED BY @papertrail_viewer_password;
+
+ALTER USER 'papertrail_admin'@'%' PASSWORD EXPIRE;
+ALTER USER 'papertrail_pi'@'%' PASSWORD EXPIRE;
+ALTER USER 'papertrail_contrib'@'%' PASSWORD EXPIRE;
+ALTER USER 'papertrail_viewer'@'%' PASSWORD EXPIRE;
 
 GRANT 'role_research_admin' TO 'papertrail_admin'@'%';
 GRANT 'role_principal_investigator' TO 'papertrail_pi'@'%';
@@ -286,5 +348,13 @@ GRANT 'role_contributor' TO 'papertrail_contrib'@'%';
 GRANT 'role_viewer' TO 'papertrail_viewer'@'%';
 
 SET DEFAULT ROLE ALL TO 'papertrail_admin'@'%', 'papertrail_pi'@'%', 'papertrail_contrib'@'%', 'papertrail_viewer'@'%';
+
+SELECT 'papertrail_admin' AS user, @papertrail_admin_password AS temporary_password
+UNION ALL
+SELECT 'papertrail_pi', @papertrail_pi_password
+UNION ALL
+SELECT 'papertrail_contrib', @papertrail_contrib_password
+UNION ALL
+SELECT 'papertrail_viewer', @papertrail_viewer_password;
 
 SET @@sql_notes = @OLD_SQL_NOTES;

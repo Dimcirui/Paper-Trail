@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PaperStatus } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/prisma";
 
@@ -12,6 +13,10 @@ type PaperPayload = {
   primaryContactId?: number;
   venueId?: number;
 };
+
+const isPaperStatus = (value: unknown): value is PaperStatus =>
+  typeof value === "string" &&
+  (Object.values(PaperStatus) as string[]).includes(value);
 
 function authorizeRequest(req: NextRequest) {
   const token = process.env.API_AUTH_TOKEN;
@@ -112,7 +117,9 @@ export async function POST(req: NextRequest) {
       data: {
         title: payload.title,
         abstract: payload.abstract ?? "",
-        status: payload.status ?? "Draft",
+        status: isPaperStatus(payload.status)
+          ? payload.status
+          : PaperStatus.Draft,
         submissionDate: payload.submissionDate
           ? new Date(payload.submissionDate)
           : null,
