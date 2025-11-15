@@ -33,6 +33,7 @@ PaperTrail is a research-publication management platform for professors, graduat
    cp .env.example .env.local
    npm install
    ```
+   Set `API_AUTH_TOKEN` in `.env.local` before running the API; requests must include `Authorization: Bearer <token>` and may optionally send `X-User-Role` to access privileged fields.
 
 3. **Generate the Prisma client + apply schema**
    ```bash

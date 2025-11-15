@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import {
+  PrismaClientKnownRequestError,
+  PrismaClientValidationError,
+} from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/prisma";
 
 type PaperPayload = {
@@ -30,19 +33,17 @@ const isPaperStatus = (value: unknown): value is PaperStatus =>
   typeof value === "string" &&
   PAPER_STATUSES.includes(value as PaperStatus);
 
-/**
- * Validates the request's Authorization header against the configured API_AUTH_TOKEN.
- *
- * @param req - The incoming NextRequest whose `Authorization` header will be checked.
- * @returns An object with `authorized: true` when the request is allowed; otherwise `authorized: false` and a `message`
- * explaining the failure (e.g., missing header or invalid credentials). If `API_AUTH_TOKEN` is not set, authorization
- * is treated as allowed and `authorized: true` is returned.
- */
+const WRITE_ROLES = new Set(["admin", "principal_investigator"]);
+const EMAIL_ROLES = new Set(["admin", "principal_investigator"]);
+
 function authorizeRequest(req: NextRequest) {
   const token = process.env.API_AUTH_TOKEN;
   if (!token) {
-    console.warn("API_AUTH_TOKEN not set. Requests are temporarily allowed.");
-    return { authorized: true };
+    console.error("API_AUTH_TOKEN is not configured. Requests are denied.");
+    return {
+      authorized: false,
+      message: "Server configuration error. Contact administrator.",
+    };
   }
   const authHeader = req.headers.get("authorization");
   if (!authHeader) {
@@ -51,7 +52,9 @@ function authorizeRequest(req: NextRequest) {
   if (authHeader !== `Bearer ${token}`) {
     return { authorized: false, message: "Invalid credentials." };
   }
-  return { authorized: true };
+  const role =
+    req.headers.get("x-user-role")?.toLowerCase() ?? "viewer";
+  return { authorized: true, role };
 }
 
 /**
@@ -63,6 +66,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: auth.message }, { status: 401 });
   }
 
+  const includeEmail = auth.role ? EMAIL_ROLES.has(auth.role) : false;
+
   try {
     const papers = await prisma.paper.findMany({
       take: 10,
@@ -70,9 +75,13 @@ export async function GET(req: NextRequest) {
       orderBy: { updatedAt: "desc" },
       include: {
         venue: true,
-        primaryContact: {
-          select: { userName: true, email: true },
-        },
+        primaryContact: includeEmail
+          ? {
+              select: { userName: true, email: true },
+            }
+          : {
+              select: { userName: true },
+            },
         topics: {
           select: {
             topic: true,
@@ -102,6 +111,12 @@ export async function POST(req: NextRequest) {
   const auth = authorizeRequest(req);
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.message }, { status: 401 });
+  }
+  if (!auth.role || !WRITE_ROLES.has(auth.role)) {
+    return NextResponse.json(
+      { error: "Insufficient permissions." },
+      { status: 403 },
+    );
   }
 
   let payload: PaperPayload;
@@ -168,6 +183,12 @@ export async function POST(req: NextRequest) {
     if (error instanceof PrismaClientKnownRequestError) {
       return NextResponse.json(
         { error: `Invalid data: ${error.message}` },
+        { status: 400 },
+      );
+    }
+    if (error instanceof PrismaClientValidationError) {
+      return NextResponse.json(
+        { error: "Invalid payload. Check field types and enums." },
         { status: 400 },
       );
     }
