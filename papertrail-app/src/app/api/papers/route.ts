@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+/**
+ * Retrieve up to 10 papers ordered by most recently updated, including each paper's venue, primary contact (username and email), and topics.
+ *
+ * @returns A NextResponse containing an object with a `papers` array of paper records on success; on failure, a 500-response object with an `error` message indicating the database issue.
+ */
 export async function GET() {
   try {
     const papers = await prisma.paper.findMany({
@@ -29,6 +34,15 @@ export async function GET() {
   }
 }
 
+/**
+ * Create a new paper from the JSON body of the request.
+ *
+ * Expects a JSON payload containing at minimum `title` and `primaryContactId`; other optional fields:
+ * `abstract`, `status`, `submissionDate`, `publicationDate`, `pdfUrl`, and `venueId`.
+ *
+ * @param req - The incoming NextRequest whose JSON body is used to create the paper.
+ * @returns A NextResponse containing `{ paper }` with status 201 on success, or an error object with status 400 (validation failure) or 500 (creation/database failure).
+ */
 export async function POST(req: NextRequest) {
   const payload = await req.json();
 

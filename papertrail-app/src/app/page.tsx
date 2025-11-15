@@ -10,6 +10,11 @@ const roadmap = [
   "Add analytics queries (papers per year, grants, venues) that can run on cached API routes.",
 ];
 
+/**
+ * Renders the PaperTrail Product Hub homepage layout with header, status cards, workflow tips, quick-link cards, and a health-check note.
+ *
+ * @returns The root JSX element representing the homepage UI.
+ */
 export default function Home() {
   return (
     <div className="min-h-screen bg-zinc-50 px-6 py-16 font-sans text-zinc-900">
