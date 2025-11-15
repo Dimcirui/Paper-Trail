@@ -50,7 +50,7 @@ PaperTrail is a research-publication management platform for professors, graduat
      ```bash
      MYSQL_PWD=<password> mysql -h 127.0.0.1 -P 3306 -u root < database/stored_procedures.sql
      ```
-   The script creates every stored procedure, trigger, scheduled event, and MySQL role documented in `docs/database.md` and `docs/stored_procedures.md`.
+   The script creates every stored procedure, trigger, scheduled event, and MySQL role documented in `docs/database.md` and `docs/stored_procedures.md`. It also generates random temporary passwords for the sample MySQL users (unless you set `@papertrail_admin_password`, etc. beforehand) and expires them so you can immediately rotate them.
 
 5. **Run the app**
    ```bash
