@@ -11,9 +11,12 @@
 # next.js
 /.next/
 /out/
+papertrail-app/.next/
+papertrail-app/out/
 
 # production
 /build
+papertrail-app/build/
 
 # misc
 .DS_Store
@@ -27,9 +30,12 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+papertrail-app/.env
+papertrail-app/.env*.local
 
 # vercel
 .vercel
+papertrail-app/.vercel
 
 # typescript
 *.tsbuildinfo
