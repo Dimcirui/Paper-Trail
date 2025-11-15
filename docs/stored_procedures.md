@@ -8,28 +8,27 @@ This document explains what lives inside `database/stored_procedures.sql` so you
 docker compose exec -T db sh -c 'mysql -uroot -proot' < database/stored_procedures.sql
 ```
 
-The command above streams the SQL into the containerized MySQL instance. Swap credentials if you changed the root password or want to run as another user. When the script finishes, all routines, triggers, events, and roles described below are present.
+The command above streams the SQL into the containerized MySQL instance. Swap credentials if you changed the root password or want to run as another user. When the script finishes, all routines, triggers, events, and roles described below are present. To override the generated temporary passwords for MySQL users, set session variables such as `SET @papertrail_admin_password='MyStrongPW';` before sourcing the file.
 
 ## Stored procedures
 
 | Procedure | Purpose |
 | --- | --- |
-| `sp_create_paper` | Inserts a new paper, applies defaults, and logs a `PAPER_CREATED` activity entry. Returns the created row so the API can confirm values. |
-| `sp_update_paper_status` | Changes a paper’s status, updates timestamps, and records an audit entry. |
-| `sp_soft_delete_paper` | Implements “Delete” by toggling `isDeleted`, forcing the status to `Withdrawn`, and logging the action. |
-| `sp_assign_author` | Upserts an authorship link, keeping author order + notes consistent and logging the change. |
+| `sp_create_paper` | Inserts a new paper inside an explicit transaction, applies defaults, and logs a `PAPER_CREATED` activity entry. Returns the created row so the API can confirm values. |
+| `sp_update_paper_status` | Changes a paper’s status, updates timestamps, and records an audit entry inside the same transaction. |
+| `sp_soft_delete_paper` | Implements “Delete” by toggling `isDeleted`, forcing the status to `Withdrawn`, and logging the action atomically. |
+| `sp_assign_author` | Upserts an authorship link, derives the next author order (if one isn’t provided) without relying on triggers, and logs the change. |
 | `sp_record_revision` | Adds entries to the `Revision` table (the trigger below mirrors entries into `ActivityLog`). |
 | `sp_add_grant_to_paper` | Upserts a `PaperGrant` row and writes an audit message. |
 | `sp_get_paper_overview` | Multi-result-set read that returns paper metadata, authors, revisions, and activities—use this when demonstrating READ operations in a SQL client. |
 | `sp_create_activity` | Utility used by automated jobs or admin tooling to add arbitrary audit entries. |
 
-These routines centralize all CRUD logic inside the database, which satisfies the “database programming objects” and “operations stored in the DB” rubric items.
+These routines centralize all CRUD logic inside the database, which satisfies the “database programming objects” and “operations stored in the DB” rubric items. Multi-step procedures are wrapped in transactions so partial writes cannot occur.
 
 ## Triggers
 
 - `trg_revision_activity` – After every revision insert, copies the detail into `ActivityLog` with the `REVISION_ADDED` action. Demonstrates automatic logging independent of the application.
 - `trg_prevent_paper_delete` – Throws an error if anyone attempts a hard `DELETE` against `Paper`, enforcing soft deletes.
-- `trg_authorship_default_order` – Before inserting an authorship row, auto-assigns the next order number if one is not provided or invalid.
 
 ## Scheduled events
 
@@ -49,7 +48,7 @@ Roles mirror application personas:
 | `role_contributor` | Record revisions and read overviews. |
 | `role_viewer` | Read-only access via `sp_get_paper_overview`. |
 
-Sample users (`papertrail_admin`, `papertrail_pi`, `papertrail_contrib`, `papertrail_viewer`) are created and assigned the appropriate default role. Replace or extend these for real deployments.
+Sample users (`papertrail_admin`, `papertrail_pi`, `papertrail_contrib`, `papertrail_viewer`) are created and assigned the appropriate default role. The script now generates unique temporary passwords (unless you provide session variables named `@papertrail_admin_password`, etc.), expires them immediately, and prints the generated values so you can rotate them right after execution. Replace or extend these for real deployments.
 
 ## How to demo CRUD for grading
 

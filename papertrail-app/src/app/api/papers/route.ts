@@ -129,7 +129,9 @@ export async function POST(req: NextRequest) {
       data: {
         title: payload.title,
         abstract: payload.abstract ?? "",
-        status: payload.status ?? "Draft",
+        status: isPaperStatus(payload.status)
+          ? payload.status
+          : PaperStatus.Draft,
         submissionDate: payload.submissionDate
           ? new Date(payload.submissionDate)
           : null,
