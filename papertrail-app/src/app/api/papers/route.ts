@@ -227,13 +227,21 @@ export async function DELETE(req: NextRequest) {
     );
   }
 
+  const paperId = parseInt(id, 10);
+  if (isNaN(paperId)) {
+    return NextResponse.json(
+      { error: "Invalid paper id." },
+      { status: 400 },
+    );
+  }
+
   try {
     // Use a stored procedure to soft delete the paper rather than direct deletion.
 
     // Actor ID is hardcoded for now; in a real app, this would come from the authenticated user context.
     const actorId = 1;
 
-    await prisma.$executeRaw`CALL sp_soft_delete_paper(${parseInt(id)}, ${actorId})`;
+    await prisma.$executeRaw`CALL sp_soft_delete_paper(${paperId}, ${actorId})`;
 
     return NextResponse.json(
       { message: `Paper with id ${id} has been soft deleted successfully.` },
