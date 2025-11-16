@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { type } from "os";
 
 const API_URL = "http://localhost:3000/api/papers";
