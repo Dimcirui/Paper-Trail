@@ -17,8 +17,9 @@ type Paper = {
 
 export default async function DashboardPage() {
     const authToken = process.env.API_AUTH_TOKEN || '';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-    const response = await fetch('http://localhost:3000/api/papers', {
+    const response = await fetch(`${apiBaseUrl}/api/papers`, {
         cache: 'no-store',
         headers: {
             'Authorization': `Bearer ${authToken}`,
@@ -44,7 +45,7 @@ export default async function DashboardPage() {
                     papers.map((paper: Paper) => (
                         <div key={paper.id} className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                             <div className="flex justify-between items-start">
-                                <span className="inline-block px-2 py-1 test-xs font-semibold text-blue-600 bg-blue-100 rounded-full mb-2">
+                                <span className="inline-block px-2 py-1 text-xs font-semibold text-blue-600 bg-blue-100 rounded-full mb-2">
                                     {paper.status}
                                 </span>
                                 <span className="text-xs text-gray-400">#{paper.id}</span>
