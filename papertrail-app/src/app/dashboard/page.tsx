@@ -1,11 +1,14 @@
 
 import React from 'react';
+import DeleteButton from './DeleteButton';
 
 export default async function DashboardPage() {
+    const authToken = process.env.API_AUTH_TOKEN || '';
+
     const response = await fetch('http://localhost:3000/api/papers', {
         cache: 'no-store',
         headers: {
-            'Authorization': `Bearer ${process.env.API_AUTH_TOKEN}`,
+            'Authorization': `Bearer ${authToken}`,
             'x-user-role': 'admin'
         }
     });
@@ -44,6 +47,8 @@ export default async function DashboardPage() {
                                 <p> {paper.venue?.venueName || "Unassigned Venue"} </p>
                                 <p> {paper.primaryContact?.userName}</p>
                             </div>
+                            
+                            <DeleteButton id={paper.id} token={authToken} />
                         </div>
                     ))
                 )}
