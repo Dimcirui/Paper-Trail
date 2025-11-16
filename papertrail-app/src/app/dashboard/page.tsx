@@ -2,6 +2,19 @@
 import React from 'react';
 import DeleteButton from './DeleteButton';
 
+type Paper = {
+    id: number;
+    title: string;
+    abstract: string | null;
+    status: string;
+    primaryContact?: {
+        userName: string;
+    };
+    venue?: {
+        venueName: string;
+    };
+};
+
 export default async function DashboardPage() {
     const authToken = process.env.API_AUTH_TOKEN || '';
 
@@ -28,7 +41,7 @@ export default async function DashboardPage() {
                 {papers.length === 0 ? (
                     <p className="text-gray-600">No papers available.</p>
                 ) : (
-                    papers.map((paper: any) => (
+                    papers.map((paper: Paper) => (
                         <div key={paper.id} className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                             <div className="flex justify-between items-start">
                                 <span className="inline-block px-2 py-1 test-xs font-semibold text-blue-600 bg-blue-100 rounded-full mb-2">
@@ -47,7 +60,7 @@ export default async function DashboardPage() {
                                 <p> {paper.venue?.venueName || "Unassigned Venue"} </p>
                                 <p> {paper.primaryContact?.userName}</p>
                             </div>
-                            
+
                             <DeleteButton id={paper.id} token={authToken} />
                         </div>
                     ))
