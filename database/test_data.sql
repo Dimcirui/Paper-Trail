@@ -26,8 +26,8 @@ ON DUPLICATE KEY UPDATE
     updatedAt=NOW();
 
 -- 4. Insert another Paper (for testing overview and status update)
-INSERT INTO Paper (id, title, primaryContactId, status, abstract, createdAt, updatedAt) 
-VALUES (2, 'Overview Test Paper', 1, 'Submitted', 'This is an abstract.', NOW(), NOW())
+INSERT INTO Paper (id, title, primaryContactId, status, abstract, venueId, createdAt, updatedAt) 
+VALUES (2, 'Overview Test Paper', 1, 'Submitted', 'This is an abstract.', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE 
     title=VALUES(title), 
     updatedAt=NOW();
@@ -36,6 +36,3 @@ ON DUPLICATE KEY UPDATE
 INSERT INTO Venue (id, venueName) VALUES
 (1, 'International Conference on Research')
 ON DUPLICATE KEY UPDATE venueName=VALUES(venueName);
-
--- 6. Update Paper 2 to link Venue
-UPDATE Paper SET venueId = 1, updatedAt = NOW() WHERE id = 2;
