@@ -1,7 +1,5 @@
 /* eslint-disable */
 
-import { type } from "os";
-
 const API_URL = "http://localhost:3000/api/papers";
 const AUTH_TOKEN = process.env.API_AUTH_TOKEN || "my-secret-token";
 
