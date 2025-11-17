@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@/lib/UserContext';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -9,7 +10,8 @@ export default function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
+  const { setUser } = useUser();
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -33,6 +35,10 @@ export default function LoginForm() {
 
       if (res.ok) {
         // After successful login, redirect to Dashboard
+        const userPayload = data.user;
+        setUser(userPayload);
+        localStorage.setItem('user', JSON.stringify(userPayload)); // Persist user info
+        
         router.push('/dashboard');
       } else {
         setError(data.error || 'Authentication failed.');

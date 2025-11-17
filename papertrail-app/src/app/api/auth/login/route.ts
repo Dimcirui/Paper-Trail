@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { SignJWT } from 'jose';
+
+function getJwtSecretKey() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is not set');
+  }
+  return new TextEncoder().encode(secret);
+}
 
 export async function POST(request: NextRequest) {
     let payload;
@@ -33,7 +42,15 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Invalid password.' }, { status: 401 });
         }
 
+        const userRole = user.role.roleName.toLowerCase().replace(/\s/g, '_');
+
         // 4. Successful authentication
+        const token = await new SignJWT({ userId: user.id, role: userRole })
+            .setProtectedHeader({ alg: 'HS256' })
+            .setIssuedAt()
+            .setExpirationTime('24h')
+            .sign(getJwtSecretKey());
+
         const responsePayload = {
             id: user.id,
             userName: user.userName,
@@ -41,7 +58,19 @@ export async function POST(request: NextRequest) {
             role: user.role.roleName.toLowerCase().replace(/\s+/g, '_'),
         };
 
-        return NextResponse.json({ success: true, user: responsePayload }, { status: 200 });
+        const response = NextResponse.json({ token, user: responsePayload }, { status: 200 });
+
+        response.cookies.set({
+            name: 'auth_token',
+            value: token,
+            httpOnly: true, // Prevent client-side JS access
+            secure: process.env.NODE_ENV === 'production', // Use https in production
+            sameSite: 'strict',
+            maxAge: 24 * 60 * 60, // 1 day
+            path: '/',
+        });
+
+        return response;
     } catch (error) {
         console.error('Login error:', error);
         return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });

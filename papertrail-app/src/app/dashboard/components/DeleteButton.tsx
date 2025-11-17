@@ -2,22 +2,29 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/lib/UserContext";
 
 export default function DeleteButton( { id, token }: { id: number; token: string } ) {
     const router = useRouter();
     const [isDeleting, setIsDeleting] = useState(false);
+    const { user } = useUser();
 
     const handleDelete = async () => {
         if (!confirm("Are you sure you want to delete this paper?")) return;
 
         setIsDeleting(true);
+        if (user?.role !== "admin") {
+            alert("You do not have permission to delete this paper.");
+            setIsDeleting(false);
+            return;
+        }
 
         try {
             const response = await fetch(`/api/papers?id=${id}`, {
                 method: "DELETE",
                 headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "x-user-role": "admin" // Hardcoded. In a real app, get from user context.
+                    "Authorization": `Bearer ${process.env.NEXT_PUBLIC_API_AUTH_TOKEN}`,
+                    "x-user-role": user.role
                 }
             });
 
