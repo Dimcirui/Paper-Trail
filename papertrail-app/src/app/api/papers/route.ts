@@ -198,3 +198,61 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+/**
+ * Soft delete a paper by its ID, using a stored procedure.
+ * Instead of Prisma.delete, we call a stored procedure `sp_soft_delete_paper`
+ *   to enforce audit logging and business rules at the database level.
+ */
+export async function DELETE(req: NextRequest) {
+  const auth = authorizeRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ error: auth.message }, { status: 401 });
+  }
+
+  if (auth.role !== "admin") {
+    return NextResponse.json(
+      { error: "Insufficient permissions. Only admins can delete papers." },
+      { status: 403 },
+    );
+  }
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json(
+      { error: "Paper id is required for deletion." },
+      { status: 400 },
+    );
+  }
+
+  const paperId = parseInt(id, 10);
+  if (isNaN(paperId)) {
+    return NextResponse.json(
+      { error: "Invalid paper id." },
+      { status: 400 },
+    );
+  }
+
+  try {
+    // Use a stored procedure to soft delete the paper rather than direct deletion.
+
+    // Actor ID is hardcoded for now; in a real app, this would come from the authenticated user context.
+    const actorId = 1;
+
+    await prisma.$executeRaw`CALL sp_soft_delete_paper(${paperId}, ${actorId})`;
+
+    return NextResponse.json(
+      { message: `Paper with id ${id} has been soft deleted successfully.` },
+      { status: 200 },
+    );
+  } catch (error: unknown) {
+    console.error("Failed to delete paper", error);
+
+    return NextResponse.json(
+      { error: "Unable to delete paper. Check database connection." },
+      { status: 500 },
+    );
+  }
+}
