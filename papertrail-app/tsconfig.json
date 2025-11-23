@@ -18,6 +18,14 @@
         "name": "next"
       }
     ],
+    "alwaysStrict": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "paths": {
       "@/*": ["./src/*"]
     }

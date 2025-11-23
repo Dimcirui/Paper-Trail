@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@/lib/UserContext';
 
 export default function LoginForm() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,8 +17,8 @@ export default function LoginForm() {
     setError('');
     setLoading(true);
 
-    if (!email || !password) {
-        setError('Please enter both email and password.');
+    if (!username || !password) {
+        setError('Please enter both username and password.');
         setLoading(false);
         return;
     }
@@ -28,7 +28,7 @@ export default function LoginForm() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await res.json();
@@ -65,14 +65,14 @@ export default function LoginForm() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="user@example.com"
+              placeholder="papertrail_admin"
             />
           </div>
 

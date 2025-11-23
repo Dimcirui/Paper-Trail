@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/prisma";
 import { PAPER_STATUSES, type PaperStatus } from "@/lib/papers";
-import {
-  authorizeRequest,
-  canIncludeEmails,
-  hasWritePermission,
-} from "./auth";
+import { authorizeRequest, hasWritePermission } from "./auth";
 
 type PaperPayload = {
   title?: string;
@@ -68,8 +64,6 @@ export async function GET(req: NextRequest) {
     ];
   }
 
-  const includeEmail = canIncludeEmails(role);
-
   try {
     const papers = await prisma.paper.findMany({
       take: 20,
@@ -77,13 +71,9 @@ export async function GET(req: NextRequest) {
       orderBy: { updatedAt: "desc" },
       include: {
         venue: true,
-        primaryContact: includeEmail
-          ? {
-              select: { userName: true, email: true },
-            }
-          : {
-              select: { userName: true },
-            },
+        primaryContact: {
+          select: { userName: true, email: true },
+        },
         topics: {
           select: {
             topic: true,
