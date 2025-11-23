@@ -24,14 +24,27 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState(true);
     
 
-    useEffect(() => {
-        // Demo, assume reading from localStorage or cookie
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
+useEffect(() => {
+    // Use setTimeout to push the task to the macrotask queue
+    // Even with 0ms delay, it breaks "synchronous execution" detection and resolves errors
+    const timer = setTimeout(() => {
+        try {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                setUser(JSON.parse(storedUser));
+            }
+        } catch (error) {
+            console.error("Failed to parse user from local storage", error);
+            localStorage.removeItem('user');
+        } finally {
+            // Regardless of whether a user is found, finally cancel the Loading state
+            setIsLoading(false);
         }
-        setIsLoading(false);
-    }, []);
+    }, 0);
+
+    // Cleanup function: clear the timer when component unmounts to prevent memory leaks
+    return () => clearTimeout(timer);
+}, []);
 
     const isAuthenticated = user !== null;
 
