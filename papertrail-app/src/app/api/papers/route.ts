@@ -72,6 +72,15 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get("status") || "";
 
   const whereClause: any = { isDeleted: false };
+  
+  const canViewRestricted = ["admin", "principal_investigator"].includes(auth.role);
+  if (!canViewRestricted) {
+    whereClause.status = "Published";
+  } else {
+    if ( status && status !== "All" ) {
+      whereClause.status = status;
+    }
+  }
 
   if (search) {
     whereClause.OR = [
@@ -80,15 +89,11 @@ export async function GET(req: NextRequest) {
     ];
   }
 
-  if (status && status !== "All") {
-    whereClause.status = status;
-  }
-
   const includeEmail = auth.role ? EMAIL_ROLES.has(auth.role) : false;
 
   try {
     const papers = await prisma.paper.findMany({
-      take: 10,
+      take: 20,
       where: whereClause,
       orderBy: { updatedAt: "desc" },
       include: {
