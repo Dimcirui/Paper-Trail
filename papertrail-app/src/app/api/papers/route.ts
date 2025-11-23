@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  PrismaClientKnownRequestError,
-  PrismaClientValidationError,
-} from "@prisma/client/runtime/library";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/prisma";
 import { PAPER_STATUSES, type PaperStatus } from "@/lib/papers";
 import {
@@ -32,16 +29,46 @@ const isPaperStatus = (value: unknown): value is PaperStatus => {
   return PAPER_STATUSES.includes(value as PaperStatus);
 };
 
-/**
- * Retrieve up to 10 most recently updated non-deleted papers, including venue, primary contact, and topics.
- */
 export async function GET(req: NextRequest) {
   const auth = authorizeRequest(req);
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.message }, { status: 401 });
   }
 
-  const includeEmail = canIncludeEmails(auth.role);
+  const role = auth.role ?? "viewer";
+  const { searchParams } = new URL(req.url);
+  const search = searchParams.get("search") ?? "";
+  const statusFilter = searchParams.get("status") ?? "";
+  const showDeleted = searchParams.get("deleted") === "true";
+
+  const isRestrictedRole = role === "admin" || role === "principal_investigator";
+  if (showDeleted && !isRestrictedRole) {
+    return NextResponse.json(
+      { error: "You do not have permission to view deleted papers." },
+      { status: 403 },
+    );
+  }
+
+  const whereClause: Record<string, unknown> = {
+    isDeleted: showDeleted ? true : false,
+  };
+
+  if (statusFilter && statusFilter !== "All") {
+    whereClause.status = statusFilter;
+  }
+
+  if (!isRestrictedRole) {
+    whereClause.status = "Published";
+  }
+
+  if (search) {
+    whereClause.OR = [
+      { title: { contains: search } },
+      { abstract: { contains: search } },
+    ];
+  }
+
+  const includeEmail = canIncludeEmails(role);
 
   try {
     const papers = await prisma.paper.findMany({
@@ -75,9 +102,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/**
- * Create a new paper from the request JSON payload and return the created paper.
- */
 export async function POST(req: NextRequest) {
   const auth = authorizeRequest(req);
   if (!auth.authorized) {
@@ -157,160 +181,8 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    if (error instanceof PrismaClientValidationError) {
-      return NextResponse.json(
-        { error: "Invalid payload. Check field types and enums." },
-        { status: 400 },
-      );
-    }
     return NextResponse.json(
       { error: "Unable to create paper. Check database connection." },
-      { status: 500 },
-    );
-  }
-}
-
-/**
- * Soft delete a paper by its ID, using a stored procedure.
- * Instead of Prisma.delete, we call a stored procedure `sp_soft_delete_paper`
- *   to enforce audit logging and business rules at the database level.
- */
-export async function DELETE(req: NextRequest) {
-  const auth = authorizeRequest(req);
-  if (!auth.authorized) {
-    return NextResponse.json({ error: auth.message }, { status: 401 });
-  }
-
-  if (auth.role !== "admin") {
-    return NextResponse.json(
-      { error: "Insufficient permissions. Only admins can delete papers." },
-      { status: 403 },
-    );
-  }
-
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
-
-  if (!id) {
-    return NextResponse.json(
-      { error: "Paper id is required for deletion." },
-      { status: 400 },
-    );
-  }
-
-  const paperId = parseInt(id, 10);
-  if (isNaN(paperId)) {
-    return NextResponse.json(
-      { error: "Invalid paper id." },
-      { status: 400 },
-    );
-  }
-
-  try {
-    // Use a stored procedure to soft delete the paper rather than direct deletion.
-
-    // Actor ID is hardcoded for now; in a real app, this would come from the authenticated user context.
-    const actorId = 1;
-
-    await prisma.$executeRaw`CALL sp_soft_delete_paper(${paperId}, ${actorId})`;
-
-    return NextResponse.json(
-      { message: `Paper with id ${id} has been soft deleted successfully.` },
-      { status: 200 },
-    );
-  } catch (error: unknown) {
-    console.error("Failed to delete paper", error);
-
-    return NextResponse.json(
-      { error: "Unable to delete paper. Check database connection." },
-      { status: 500 },
-    );
-  }
-}
-
-/**
- * Update paper details (Title, Abstract) OR Status.
- * - Status changes trigger `sp_update_paper_status` (for audit logging).
- * - Metadata changes use standard Prisma update.
- */
-export async function PATCH(req: NextRequest) {
-  const auth = authorizeRequest(req);
-  if (!auth.authorized) {
-    return NextResponse.json({ error: auth.message }, { status: 401 });
-  }
-
-  if (!["admin", "principal_investigator", "contributor"].includes(auth.role ?? "")) {
-    return NextResponse.json(
-      { error: "Insufficient permissions." },
-      { status: 403 },
-    );
-  }
-
-  let payload;
-  try {
-    payload = await req.json();
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON in request body." },
-      { status: 400 },
-    );
-  }
-
-  if (payload.isDeleted === false) {
-    try {
-      await prisma.paper.update({
-        where: { id: payload.id },
-        data: { 
-          isDeleted: false,
-          status: 'Draft'
-        },
-    });
-
-    return NextResponse.json(
-      { message: `Paper with id ${payload.id} has been restored successfully.` },
-      { status: 200 },
-    );
-    } catch (error) {
-      console.error("Failed to restore paper", error);
-      return NextResponse.json(
-        { error: "Unable to restore paper. Check database connection." },
-        { status: 500 },
-      );
-    }
-  }
-
-  if (!payload.id) {
-    return NextResponse.json(
-      { error: "Paper id is required for update." },
-      { status: 400 },
-    );
-  }
-
-  try {
-    if (payload.status) {
-      const actorId = 1; // Hardcoded for demo; replace with authenticated user ID in real app
-
-      await prisma.$executeRaw`CALL sp_update_paper_status(${payload.id}, ${payload.status}, ${actorId})`;
-  }
-
-  if (payload.title || payload.abstract) {
-      await prisma.paper.update({
-        where: { id: payload.id },
-        data: {
-          ...(payload.title && { title: payload.title }),
-          ...(payload.abstract && { abstract: payload.abstract }),
-        },
-      });
-    }
-
-    return NextResponse.json(
-      { message: `Paper with id ${payload.id} has been updated successfully.` },
-      { status: 200 },
-    );
-  } catch (error: unknown) {
-    console.error("Failed to update paper", error);
-    return NextResponse.json(
-      { error: "Unable to update paper. Check database connection." },
       { status: 500 },
     );
   }
