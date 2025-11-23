@@ -4,6 +4,7 @@ import {
   PrismaClientValidationError,
 } from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/prisma";
+import { Paper, Prisma } from "@prisma/client";
 
 type PaperPayload = {
   title?: string;
@@ -82,7 +83,7 @@ export async function GET(req: NextRequest) {
     );
   }
   
-  const whereClause: any = {
+const whereClause: Prisma.PaperWhereInput = {
     isDeleted: isTrashView ? true : false, 
   };
 
@@ -90,7 +91,7 @@ export async function GET(req: NextRequest) {
     whereClause.status = "Published";
   } else {
     if ( status && status !== "All" ) {
-      whereClause.status = status;
+      whereClause.status = status as PaperStatus;
     }
   }
 
