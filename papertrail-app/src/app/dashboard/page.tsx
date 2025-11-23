@@ -1,6 +1,7 @@
 
 import React from 'react';
-import DeleteButton from './DeleteButton';
+import DeleteButton from './components/DeleteButton';
+import LogoutButton from './components/LogoutButton';
 
 type Paper = {
     id: number;
@@ -32,11 +33,12 @@ export default async function DashboardPage() {
     }
 
     const data = await response.json();
-    const papers = data.papers || [];
+    const papers: Paper[] = data.papers || [];
 
     return (
         <div className="p-8 bg-gray-50 min-h-screen">
             <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+            <LogoutButton />
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 
                 {papers.length === 0 ? (
