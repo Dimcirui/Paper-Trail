@@ -4,10 +4,10 @@ import Link from 'next/link';
 import LogoutButton from '../components/LogoutButton';
 
 type Props = {
-    searchParams: {
+    searchParams: Promise<{
         search?: string;
         status?: string;
-    }
+    }>
 }
 
 type Paper = {
@@ -23,7 +23,8 @@ type Paper = {
     };
 };
 
-export default async function BrowserPage({ searchParams }: Props) {
+export default async function BrowserPage(props: Props) {
+    const searchParams = await props.searchParams;
     const query = searchParams.search || '';
     const statusFilter = searchParams.status || '';
 
@@ -70,7 +71,7 @@ export default async function BrowserPage({ searchParams }: Props) {
                     </Link>
 
                     <div className="w-px h-6 bg-zinc-300 hidden md:block"></div>
-                    
+
                     <LogoutButton />
                 </div>
             </div>
