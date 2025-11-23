@@ -344,10 +344,34 @@ SET @papertrail_pi_password = COALESCE(@papertrail_pi_password, UUID());
 SET @papertrail_contrib_password = COALESCE(@papertrail_contrib_password, UUID());
 SET @papertrail_viewer_password = COALESCE(@papertrail_viewer_password, UUID());
 
-CREATE USER 'papertrail_admin'@'%' IDENTIFIED BY @papertrail_admin_password;
-CREATE USER 'papertrail_pi'@'%' IDENTIFIED BY @papertrail_pi_password;
-CREATE USER 'papertrail_contrib'@'%' IDENTIFIED BY @papertrail_contrib_password;
-CREATE USER 'papertrail_viewer'@'%' IDENTIFIED BY @papertrail_viewer_password;
+-- MySQL 8.0 does not permit the direct use of user variables (@variable) as the value for IDENTIFIED BY in CREATE USER.
+-- Therefore, we use prepared statements to dynamically construct and execute the CREATE USER commands.
+
+-- CREATE USER 'papertrail_admin'@'%' IDENTIFIED BY @papertrail_admin_password;
+-- CREATE USER 'papertrail_pi'@'%' IDENTIFIED BY @papertrail_pi_password;
+-- CREATE USER 'papertrail_contrib'@'%' IDENTIFIED BY @papertrail_contrib_password;
+-- CREATE USER 'papertrail_viewer'@'%' IDENTIFIED BY @papertrail_viewer_password;
+
+SET @sql = CONCAT('CREATE USER ''papertrail_admin''@''%'' IDENTIFIED BY ''', @papertrail_admin_password, '''');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = CONCAT('CREATE USER ''papertrail_pi''@''%'' IDENTIFIED BY ''', @papertrail_pi_password, '''');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = CONCAT('CREATE USER ''papertrail_contrib''@''%'' IDENTIFIED BY ''', @papertrail_contrib_password, '''');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = CONCAT('CREATE USER ''papertrail_viewer''@''%'' IDENTIFIED BY ''', @papertrail_viewer_password, '''');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 
 ALTER USER 'papertrail_admin'@'%' PASSWORD EXPIRE;
 ALTER USER 'papertrail_pi'@'%' PASSWORD EXPIRE;

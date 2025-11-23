@@ -89,8 +89,9 @@ const isPaperStatus = (value: unknown): value is PaperStatus =>
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id?: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
+  const params = await context.params;
   const auth = authorizeRequest(req);
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.message }, { status: 401 });
