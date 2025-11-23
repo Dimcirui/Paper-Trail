@@ -13,7 +13,8 @@ export type AuthorizationResult = {
  * Validates the bearer token and extracts the caller role from the request headers.
  */
 export function authorizeRequest(req: NextRequest): AuthorizationResult {
-  const token = process.env.API_AUTH_TOKEN;
+  const token =
+    process.env.API_AUTH_TOKEN ?? process.env.NEXT_PUBLIC_API_AUTH_TOKEN;
   if (!token) {
     console.error("API_AUTH_TOKEN is not configured. Requests are denied.");
     return {

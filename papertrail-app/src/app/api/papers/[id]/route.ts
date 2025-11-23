@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { mysqlPool } from "@/lib/mysql";
-import { authorizeRequest } from "../auth";
+import { prisma } from "@/lib/prisma";
+import { PAPER_STATUSES, type PaperStatus } from "@/lib/papers";
+import { authorizeRequest, hasWritePermission } from "../auth";
+import {
+  PrismaClientKnownRequestError,
+  PrismaClientValidationError,
+} from "@prisma/client/runtime/library";
 import { z } from "zod";
 
 const paramsSchema = z.object({
@@ -65,6 +71,99 @@ export async function GET(
     console.error("Failed to fetch paper overview", error);
     return NextResponse.json(
       { error: "Unable to fetch paper details at this time." },
+      { status: 500 },
+    );
+  }
+}
+
+const updateSchema = z.object({
+  title: z.string().min(3).optional(),
+  abstract: z.string().optional(),
+  status: z.string().optional(),
+});
+
+const isPaperStatus = (value: unknown): value is PaperStatus =>
+  typeof value === "string" &&
+  PAPER_STATUSES.includes(value as PaperStatus);
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id?: string } },
+) {
+  const auth = authorizeRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ error: auth.message }, { status: 401 });
+  }
+  if (!hasWritePermission(auth.role)) {
+    return NextResponse.json(
+      { error: "Insufficient permissions." },
+      { status: 403 },
+    );
+  }
+
+  const parsed = paramsSchema.safeParse(params);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid paper ID." },
+      { status: 400 },
+    );
+  }
+
+  const payload = updateSchema.safeParse(await req.json().catch(() => ({})));
+  if (!payload.success) {
+    return NextResponse.json(
+      { error: "Invalid payload." },
+      { status: 400 },
+    );
+  }
+
+  const updateData: Record<string, unknown> = {};
+  if (payload.data.title) {
+    updateData.title = payload.data.title;
+  }
+  if (payload.data.abstract !== undefined) {
+    updateData.abstract = payload.data.abstract;
+  }
+  if (payload.data.status) {
+    if (!isPaperStatus(payload.data.status)) {
+      return NextResponse.json(
+        { error: "Unsupported status value." },
+        { status: 400 },
+      );
+    }
+    updateData.status = payload.data.status;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json(
+      { error: "Include at least one field to update." },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const updated = await prisma.paper.update({
+      where: { id: parsed.data.id },
+      data: updateData,
+    });
+
+    return NextResponse.json({ paper: updated });
+  } catch (error) {
+    console.error("Failed to update paper", error);
+    if (error instanceof PrismaClientKnownRequestError) {
+      return NextResponse.json(
+        { error: `Database error: ${error.message}` },
+        { status: 400 },
+      );
+    }
+    if (error instanceof PrismaClientValidationError) {
+      return NextResponse.json(
+        { error: "Validation error while updating paper." },
+        { status: 400 },
+      );
+    }
+    return NextResponse.json(
+      { error: "Unable to update paper right now." },
       { status: 500 },
     );
   }

@@ -133,6 +133,7 @@ BEGIN
 
   START TRANSACTION;
 
+<<<<<<< HEAD
   IF p_author_order IS NULL THEN
     SELECT IFNULL(MAX(authorOrder), 0) + 1
       INTO v_author_order
@@ -142,6 +143,17 @@ BEGIN
   ELSE
     SET v_author_order = p_author_order;
   END IF;
+=======
+  SET v_author_order = COALESCE(
+    p_author_order,
+    (
+      SELECT IFNULL(MAX(authorOrder), 0) + 1
+      FROM Authorship
+      WHERE paperId = p_paper_id
+      FOR UPDATE
+    )
+  );
+>>>>>>> dev
 
   INSERT INTO Authorship (paperId, userId, authorOrder, contributionNotes)
   VALUES (p_paper_id, p_user_id, v_author_order, p_notes)

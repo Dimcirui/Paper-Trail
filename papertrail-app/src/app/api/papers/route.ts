@@ -4,6 +4,7 @@ import {
   PrismaClientValidationError,
 } from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/prisma";
+import { PAPER_STATUSES, type PaperStatus } from "@/lib/papers";
 import {
   authorizeRequest,
   canIncludeEmails,
@@ -21,17 +22,6 @@ type PaperPayload = {
   venueId?: number;
 };
 
-const PAPER_STATUSES = [
-  "Draft",
-  "Submitted",
-  "UnderReview",
-  "Accepted",
-  "Published",
-  "Rejected",
-  "Withdrawn",
-] as const;
-
-type PaperStatus = (typeof PAPER_STATUSES)[number];
 const DEFAULT_PAPER_STATUS: PaperStatus = "Draft";
 
 const isPaperStatus = (value: unknown): value is PaperStatus => {
@@ -41,7 +31,6 @@ const isPaperStatus = (value: unknown): value is PaperStatus => {
   }
   return PAPER_STATUSES.includes(value as PaperStatus);
 };
-
 
 /**
  * Retrieve up to 10 most recently updated non-deleted papers, including venue, primary contact, and topics.
@@ -88,10 +77,6 @@ export async function GET(req: NextRequest) {
 
 /**
  * Create a new paper from the request JSON payload and return the created paper.
- *
- * Validates authorization and required fields (`title`, `primaryContactId`), verifies that the referenced primary contact (and venue, if provided) exist, and inserts the paper with sensible defaults for optional fields.
- *
- * @returns `NextResponse` containing `{ paper }` with status `201` on success. Returns JSON `{ error }` with status `401` for missing/invalid authorization, `400` for validation or bad input (including invalid JSON or non-existent referenced records), or `500` for unexpected server/database errors.
  */
 export async function POST(req: NextRequest) {
   const auth = authorizeRequest(req);
