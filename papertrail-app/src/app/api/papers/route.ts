@@ -71,9 +71,21 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get("search") || "";
   const status = searchParams.get("status") || "";
 
-  const whereClause: any = { isDeleted: false };
   
-  const canViewRestricted = ["admin", "principal_investigator"].includes(auth.role);
+  const isTrashView = searchParams.get("deleted") === "true";
+  const canViewRestricted = ["admin", "principal_investigator"].includes(auth.role ?? "");
+  
+  if (isTrashView && !canViewRestricted) {
+    return NextResponse.json(
+      { error: "You do not have permission to view deleted papers." },
+      { status: 403 },
+    );
+  }
+  
+  const whereClause: any = {
+    isDeleted: isTrashView ? true : false, 
+  };
+
   if (!canViewRestricted) {
     whereClause.status = "Published";
   } else {
@@ -89,7 +101,7 @@ export async function GET(req: NextRequest) {
     ];
   }
 
-  const includeEmail = auth.role ? EMAIL_ROLES.has(auth.role) : false;
+  const includeEmail = EMAIL_ROLES.has(auth.role ?? "");
 
   try {
     const papers = await prisma.paper.findMany({
@@ -291,14 +303,14 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: auth.message }, { status: 401 });
   }
 
-  if (!["admin", "principal_investigator", "contributor"].includes(auth.role)) {
+  if (!["admin", "principal_investigator", "contributor"].includes(auth.role ?? "")) {
     return NextResponse.json(
       { error: "Insufficient permissions." },
       { status: 403 },
     );
   }
 
-  let payload: { id: number; title?: string; abstract?: string; status?: PaperStatus };
+  let payload;
   try {
     payload = await req.json();
   } catch {
@@ -306,6 +318,29 @@ export async function PATCH(req: NextRequest) {
       { error: "Invalid JSON in request body." },
       { status: 400 },
     );
+  }
+
+  if (payload.isDeleted === false) {
+    try {
+      await prisma.paper.update({
+        where: { id: payload.id },
+        data: { 
+          isDeleted: false,
+          status: 'Draft'
+        },
+    });
+
+    return NextResponse.json(
+      { message: `Paper with id ${payload.id} has been restored successfully.` },
+      { status: 200 },
+    );
+    } catch (error) {
+      console.error("Failed to restore paper", error);
+      return NextResponse.json(
+        { error: "Unable to restore paper. Check database connection." },
+        { status: 500 },
+      );
+    }
   }
 
   if (!payload.id) {
