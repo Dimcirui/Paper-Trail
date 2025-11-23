@@ -62,9 +62,15 @@ export default async function BrowserPage({ searchParams }: Props) {
                     <p className="text-zinc-500 text-sm mt-1">Search and filter publication records.</p>
                 </div>
                 <div className="flex items-center gap-4">
-                    <Link href="/dashboard" className="text-sm font-medium text-indigo-600 hover:text-indigo-800">
-                        &larr; Back to Hub
+                    <Link 
+                        href="/dashboard" 
+                        className="px-4 py-2 text-sm font-medium text-zinc-600 bg-white border border-zinc-300 rounded-lg hover:bg-zinc-50 transition-colors"
+                    >
+                        Back to Hub
                     </Link>
+
+                    <div className="w-px h-6 bg-zinc-300 hidden md:block"></div>
+                    
                     <LogoutButton />
                 </div>
             </div>

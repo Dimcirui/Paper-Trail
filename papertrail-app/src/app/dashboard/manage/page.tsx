@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import DeleteButton from '../components/DeleteButton';
+import LogoutButton from '../components/LogoutButton';
 
 type Paper = {
     id: number;
@@ -50,12 +51,22 @@ export default async function ManagePage() {
                         Back to Hub
                     </Link>
                     <Link 
+                        href="/dashboard/manage/trash" 
+                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-sm flex items-center gap-2 transition-colors"
+                    >
+                        Trash Can
+                    </Link>
+                    <Link 
                         href="/dashboard/manage/new" 
                         className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm flex items-center gap-2 transition-colors"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
                         Create Paper
                     </Link>
+
+                    <div className="w-px h-6 bg-zinc-300 mx-1 hidden md:block"></div>
+                    
+                    <LogoutButton />
                 </div>
             </div>
 
