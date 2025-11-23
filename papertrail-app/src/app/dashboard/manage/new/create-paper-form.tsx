@@ -14,7 +14,7 @@ type Option = {
 type CreatePaperFormProps = {
   venues: Option[];
   contacts: Option[];
-  statuses: string[];
+  statuses: readonly string[];
 };
 
 type FormState =

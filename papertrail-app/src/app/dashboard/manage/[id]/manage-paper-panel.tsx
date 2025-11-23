@@ -32,7 +32,7 @@ type ManagePaperPanelProps = {
     status: string;
   };
   authors: Author[];
-  statuses: string[];
+  statuses: readonly string[];
   availableAuthors: Option[];
 };
 
