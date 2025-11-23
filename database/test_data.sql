@@ -49,38 +49,38 @@ INSERT INTO `Grant` (id, grantName, sponsor, startDate, endDate, reportingRequir
 (3, 'Google Research Award', 'Google', '2024-01-01', '2024-12-31', 'Final Impact Statement');
 
 -- Users
-INSERT INTO User (id, userName, email, password, roleId, affiliation, orcid) VALUES
+INSERT INTO User (id, userName, email, password, roleId, affiliation, orcid, updatedAt) VALUES
     -- Admin
-(1, 'AdminUser', 'admin@papertrail.edu', 'pass', 1, 'University Admin Office', NULL),
+(1, 'AdminUser', 'admin@papertrail.edu', 'pass', 1, 'University Admin Office', NULL, NOW()),
     -- PIs
-(2, 'Prof. Alice Smith', 'alice@papertrail.edu', 'pass', 2, 'Computer Science Dept', '0000-0001-XXXX-XXXX'),
-(3, 'Dr. Bob Jones', 'bob@papertrail.edu', 'pass', 2, 'Biology Dept', '0000-0002-YYYY-YYYY'),
+(2, 'Prof. Alice Smith', 'alice@papertrail.edu', 'pass', 2, 'Computer Science Dept', '0000-0001-XXXX-XXXX', NOW()),
+(3, 'Dr. Bob Jones', 'bob@papertrail.edu', 'pass', 2, 'Biology Dept', '0000-0002-YYYY-YYYY', NOW()),
     -- Contributors
-(4, 'Carol (PhD Student)', 'carol@papertrail.edu', 'pass', 3, 'CS Lab A', NULL),
-(5, 'Dave (Postdoc)', 'dave@papertrail.edu', 'pass', 3, 'Bio Lab B', NULL),
-(6, 'Eve (External)', 'eve@partner.org', 'pass', 3, 'Partner Institute', NULL),
+(4, 'Carol (PhD Student)', 'carol@papertrail.edu', 'pass', 3, 'CS Lab A', NULL, NOW()),
+(5, 'Dave (Postdoc)', 'dave@papertrail.edu', 'pass', 3, 'Bio Lab B', NULL, NOW()),
+(6, 'Eve (External)', 'eve@partner.org', 'pass', 3, 'Partner Institute', NULL, NOW()),
     -- Viewer
-(7, 'Frank Viewer', 'frank@guest.com', 'pass', 4, NULL, NULL);
+(7, 'Frank Viewer', 'frank@guest.com', 'pass', 4, NULL, NULL, NOW());
 
 -- Papers
     -- Published
-INSERT INTO Paper (id, title, abstract, status, submissionDate, publicationDate, primaryContactId, venueId, isDeleted) VALUES
-(1, 'Deep Learning for Sparse Data', 'This paper explores novel architectures for handling sparse datasets in high-dimensional spaces.', 'Published', '2023-02-15', '2023-08-20', 2, 2, FALSE);
+INSERT INTO Paper (id, title, abstract, status, submissionDate, publicationDate, primaryContactId, venueId, isDeleted, updatedAt) VALUES
+(1, 'Deep Learning for Sparse Data', 'This paper explores novel architectures for handling sparse datasets in high-dimensional spaces.', 'Published', '2023-02-15', '2023-08-20', 2, 2, FALSE, NOW());
     -- Under Review
-INSERT INTO Paper (id, title, abstract, status, submissionDate, publicationDate, primaryContactId, venueId, isDeleted) VALUES
-(2, 'Genomic Sequences in Algae', 'A comprehensive study of algae genome variations using new sequencing techniques.', 'UnderReview', '2024-01-10', NULL, 3, 1, FALSE);
+INSERT INTO Paper (id, title, abstract, status, submissionDate, publicationDate, primaryContactId, venueId, isDeleted, updatedAt) VALUES
+(2, 'Genomic Sequences in Algae', 'A comprehensive study of algae genome variations using new sequencing techniques.', 'UnderReview', '2024-01-10', NULL, 3, 1, FALSE, NOW());
     -- Draft
-INSERT INTO Paper (id, title, abstract, status, submissionDate, publicationDate, primaryContactId, venueId, isDeleted) VALUES
-(3, 'Preliminary Notes on Transformer Efficiency', 'Drafting ideas about attention mechanism optimization. Work in progress.', 'Draft', NULL, NULL, 4, NULL, FALSE);
+INSERT INTO Paper (id, title, abstract, status, submissionDate, publicationDate, primaryContactId, venueId, isDeleted, updatedAt) VALUES
+(3, 'Preliminary Notes on Transformer Efficiency', 'Drafting ideas about attention mechanism optimization. Work in progress.', 'Draft', NULL, NULL, 4, NULL, FALSE, NOW());
     -- Rejected
-INSERT INTO Paper (id, title, abstract, status, submissionDate, publicationDate, primaryContactId, venueId, isDeleted) VALUES
-(4, 'Analysis of Failed Systems', 'Post-mortem analysis of distributed system crashes.', 'Rejected', '2022-11-01', NULL, 2, 5, FALSE);
+INSERT INTO Paper (id, title, abstract, status, submissionDate, publicationDate, primaryContactId, venueId, isDeleted, updatedAt) VALUES
+(4, 'Analysis of Failed Systems', 'Post-mortem analysis of distributed system crashes.', 'Rejected', '2022-11-01', NULL, 2, 5, FALSE, NOW());
     -- Withdrawn
-INSERT INTO Paper (id, title, abstract, status, submissionDate, publicationDate, primaryContactId, venueId, isDeleted) VALUES
-(5, 'Legacy Project 2020', 'Old data that is no longer relevant.', 'Withdrawn', '2020-05-01', NULL, 3, 3, TRUE);
+INSERT INTO Paper (id, title, abstract, status, submissionDate, publicationDate, primaryContactId, venueId, isDeleted, updatedAt) VALUES
+(5, 'Legacy Project 2020', 'Old data that is no longer relevant.', 'Withdrawn', '2020-05-01', NULL, 3, 3, TRUE, NOW());
     -- Submitted
-INSERT INTO Paper (id, title, abstract, status, submissionDate, publicationDate, primaryContactId, venueId, isDeleted) VALUES
-(6, 'Ethical Implications of LLMs', 'Surveying the societal impact of large language models.', 'Submitted', '2024-03-01', NULL, 2, 4, FALSE);
+INSERT INTO Paper (id, title, abstract, status, submissionDate, publicationDate, primaryContactId, venueId, isDeleted, updatedAt) VALUES
+(6, 'Ethical Implications of LLMs', 'Surveying the societal impact of large language models.', 'Submitted', '2024-03-01', NULL, 2, 4, FALSE, NOW());
 
 -- Junction Tables
     -- Authorships
