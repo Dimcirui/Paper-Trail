@@ -4,6 +4,11 @@ import {
   PrismaClientValidationError,
 } from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/prisma";
+import {
+  authorizeRequest,
+  canIncludeEmails,
+  hasWritePermission,
+} from "./auth";
 
 type PaperPayload = {
   title?: string;
@@ -29,33 +34,14 @@ const PAPER_STATUSES = [
 type PaperStatus = (typeof PAPER_STATUSES)[number];
 const DEFAULT_PAPER_STATUS: PaperStatus = "Draft";
 
-const isPaperStatus = (value: unknown): value is PaperStatus =>
-  typeof value === "string" &&
-  PAPER_STATUSES.includes(value as PaperStatus);
+const isPaperStatus = (value: unknown): value is PaperStatus => {
+  if (typeof value !== "string") {
+    console.error("Invalid status type received.", { value });
+    return false;
+  }
+  return PAPER_STATUSES.includes(value as PaperStatus);
+};
 
-const WRITE_ROLES = new Set(["admin", "principal_investigator"]);
-const EMAIL_ROLES = new Set(["admin", "principal_investigator"]);
-
-function authorizeRequest(req: NextRequest) {
-  const token = process.env.API_AUTH_TOKEN;
-  if (!token) {
-    console.error("API_AUTH_TOKEN is not configured. Requests are denied.");
-    return {
-      authorized: false,
-      message: "Server configuration error. Contact administrator.",
-    };
-  }
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader) {
-    return { authorized: false, message: "Missing Authorization header." };
-  }
-  if (authHeader !== `Bearer ${token}`) {
-    return { authorized: false, message: "Invalid credentials." };
-  }
-  const role =
-    req.headers.get("x-user-role")?.toLowerCase() ?? "viewer";
-  return { authorized: true, role };
-}
 
 /**
  * Retrieve up to 10 most recently updated non-deleted papers, including venue, primary contact, and topics.
@@ -66,7 +52,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: auth.message }, { status: 401 });
   }
 
-  const includeEmail = auth.role ? EMAIL_ROLES.has(auth.role) : false;
+  const includeEmail = canIncludeEmails(auth.role);
 
   try {
     const papers = await prisma.paper.findMany({
@@ -112,7 +98,7 @@ export async function POST(req: NextRequest) {
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.message }, { status: 401 });
   }
-  if (!auth.role || !WRITE_ROLES.has(auth.role)) {
+  if (!hasWritePermission(auth.role)) {
     return NextResponse.json(
       { error: "Insufficient permissions." },
       { status: 403 },
@@ -129,7 +115,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!payload?.title || !payload?.primaryContactId) {
+  if (!payload || !payload.title || !payload.primaryContactId) {
     return NextResponse.json(
       { error: "title and primaryContactId are required" },
       { status: 400 },
