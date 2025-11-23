@@ -4,6 +4,7 @@ import {
   PrismaClientValidationError,
 } from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/prisma";
+import { Paper, Prisma } from "@prisma/client";
 
 type PaperPayload = {
   title?: string;
@@ -66,12 +67,47 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: auth.message }, { status: 401 });
   }
 
-  const includeEmail = auth.role ? EMAIL_ROLES.has(auth.role) : false;
+  // Search and filter parameters
+  const { searchParams } = new URL(req.url);
+  const search = searchParams.get("search") || "";
+  const status = searchParams.get("status") || "";
+
+  
+  const isTrashView = searchParams.get("deleted") === "true";
+  const canViewRestricted = ["admin", "principal_investigator"].includes(auth.role ?? "");
+  
+  if (isTrashView && !canViewRestricted) {
+    return NextResponse.json(
+      { error: "You do not have permission to view deleted papers." },
+      { status: 403 },
+    );
+  }
+  
+const whereClause: Prisma.PaperWhereInput = {
+    isDeleted: isTrashView ? true : false, 
+  };
+
+  if (!canViewRestricted) {
+    whereClause.status = "Published";
+  } else {
+    if ( status && status !== "All" ) {
+      whereClause.status = status as PaperStatus;
+    }
+  }
+
+  if (search) {
+    whereClause.OR = [
+      { title: { contains: search } },
+      { abstract: { contains: search } },
+    ];
+  }
+
+  const includeEmail = EMAIL_ROLES.has(auth.role ?? "");
 
   try {
     const papers = await prisma.paper.findMany({
-      take: 10,
-      where: { isDeleted: false },
+      take: 20,
+      where: whereClause,
       orderBy: { updatedAt: "desc" },
       include: {
         venue: true,
@@ -252,6 +288,94 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json(
       { error: "Unable to delete paper. Check database connection." },
+      { status: 500 },
+    );
+  }
+}
+
+/**
+ * Update paper details (Title, Abstract) OR Status.
+ * - Status changes trigger `sp_update_paper_status` (for audit logging).
+ * - Metadata changes use standard Prisma update.
+ */
+export async function PATCH(req: NextRequest) {
+  const auth = authorizeRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ error: auth.message }, { status: 401 });
+  }
+
+  if (!["admin", "principal_investigator", "contributor"].includes(auth.role ?? "")) {
+    return NextResponse.json(
+      { error: "Insufficient permissions." },
+      { status: 403 },
+    );
+  }
+
+  let payload;
+  try {
+    payload = await req.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid JSON in request body." },
+      { status: 400 },
+    );
+  }
+
+  if (payload.isDeleted === false) {
+    try {
+      await prisma.paper.update({
+        where: { id: payload.id },
+        data: { 
+          isDeleted: false,
+          status: 'Draft'
+        },
+    });
+
+    return NextResponse.json(
+      { message: `Paper with id ${payload.id} has been restored successfully.` },
+      { status: 200 },
+    );
+    } catch (error) {
+      console.error("Failed to restore paper", error);
+      return NextResponse.json(
+        { error: "Unable to restore paper. Check database connection." },
+        { status: 500 },
+      );
+    }
+  }
+
+  if (!payload.id) {
+    return NextResponse.json(
+      { error: "Paper id is required for update." },
+      { status: 400 },
+    );
+  }
+
+  try {
+    if (payload.status) {
+      const actorId = 1; // Hardcoded for demo; replace with authenticated user ID in real app
+
+      await prisma.$executeRaw`CALL sp_update_paper_status(${payload.id}, ${payload.status}, ${actorId})`;
+  }
+
+  if (payload.title || payload.abstract) {
+      await prisma.paper.update({
+        where: { id: payload.id },
+        data: {
+          ...(payload.title && { title: payload.title }),
+          ...(payload.abstract && { abstract: payload.abstract }),
+        },
+      });
+    }
+
+    return NextResponse.json(
+      { message: `Paper with id ${payload.id} has been updated successfully.` },
+      { status: 200 },
+    );
+  } catch (error: unknown) {
+    console.error("Failed to update paper", error);
+    return NextResponse.json(
+      { error: "Unable to update paper. Check database connection." },
       { status: 500 },
     );
   }
