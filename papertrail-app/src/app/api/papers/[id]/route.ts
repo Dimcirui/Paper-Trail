@@ -17,8 +17,9 @@ type StoredProcedureRow = Record<string, unknown>;
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id?: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
+  const params = await context.params;
   const auth = authorizeRequest(req);
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.message }, { status: 401 });
