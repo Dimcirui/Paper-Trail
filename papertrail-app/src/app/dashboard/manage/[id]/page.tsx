@@ -5,19 +5,21 @@ import { PAPER_STATUSES } from "@/lib/papers";
 import { ManagePaperPanel } from "./manage-paper-panel";
 
 type ManageParams = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 export async function generateMetadata({
   params,
 }: ManageParams): Promise<Metadata> {
+  const resolved = await params;
   return {
-    title: `Manage Paper #${params.id} | PaperTrail`,
+    title: `Manage Paper #${resolved.id} | PaperTrail`,
   };
 }
 
 export default async function ManagePaperPage({ params }: ManageParams) {
-  const id = Number(params.id);
+  const resolved = await params;
+  const id = Number(resolved.id);
   if (Number.isNaN(id)) {
     notFound();
   }
