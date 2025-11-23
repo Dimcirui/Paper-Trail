@@ -17,22 +17,22 @@ INSERT INTO User (id, userName, email, password, roleId, createdAt, updatedAt) V
 ON DUPLICATE KEY UPDATE 
     userName=VALUES(userName), 
     updatedAt=NOW();
+    
+-- 3. Insert a Venue (for testing overview)
+INSERT INTO Venue (id, venueName) VALUES
+(1, 'International Conference on Research')
+ON DUPLICATE KEY UPDATE venueName=VALUES(venueName);
 
--- 3. Insert a Paper record (for testing deletion and authorship assignment)
+-- 4. Insert a Paper record (for testing deletion and authorship assignment)
 INSERT INTO Paper (id, title, primaryContactId, status, createdAt, updatedAt) 
 VALUES (1, 'Test Paper for Deletion', 1, 'Draft', NOW(), NOW())
 ON DUPLICATE KEY UPDATE 
     title=VALUES(title), 
     updatedAt=NOW();
 
--- 4. Insert another Paper (for testing overview and status update)
+-- 5. Insert another Paper (for testing overview and status update)
 INSERT INTO Paper (id, title, primaryContactId, status, abstract, venueId, createdAt, updatedAt) 
 VALUES (2, 'Overview Test Paper', 1, 'Submitted', 'This is an abstract.', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE 
     title=VALUES(title), 
     updatedAt=NOW();
-
--- 5. Insert a Venue (for testing overview)
-INSERT INTO Venue (id, venueName) VALUES
-(1, 'International Conference on Research')
-ON DUPLICATE KEY UPDATE venueName=VALUES(venueName);
