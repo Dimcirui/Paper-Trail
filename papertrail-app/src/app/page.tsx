@@ -1,96 +1,156 @@
-const quickLinks = [
+import Link from "next/link";
+
+const spotlightFeatures = [
   {
-    title: "Database Schema",
-    body: "Review Prisma schema design patterns before writing migrations.",
-    href: "https://www.prisma.io/docs/concepts/components/prisma-schema",
+    title: "Manuscript Browser",
+    body: "Search, filter, and open consolidated paper records with metadata, authorship info, revisions, and audit logs.",
+    href: "/dashboard/browser",
   },
   {
-    title: "API Routes",
-    body: "Leverage the Next.js App Router and API routes doc to colocate backend logic.",
-    href: "https://nextjs.org/docs/app/building-your-application/routing/router-handlers",
+    title: "Author Management",
+    body: "Assign contributors, reorder authorship, or remove collaborators directly from the paper management console.",
+    href: "/dashboard/manage",
   },
   {
-    title: "Prisma Patterns",
-    body: "Consult Prisma's docs for best practices on transactions, validation, and raw SQL.",
-    href: "https://www.prisma.io/docs",
+    title: "Analytics",
+    body: "Visualize status distribution, publication velocity, and top venues to inform faculty reporting.",
+    href: "/dashboard/analytics",
   },
 ];
 
-const roadmap = [
-  "Implement authentication (NextAuth or custom) tied to the Role/User tables.",
-  "Build CRUD flows for Paper, Authorship, and Revision data in the dashboard.",
-  "Add analytics queries (papers per year, grants, venues) that can run on cached API routes.",
+const quickStarts = [
+  {
+    label: "Open Dashboard",
+    description: "Jump into the research control room.",
+    href: "/dashboard",
+  },
+  {
+    label: "Register New Paper",
+    description: "Capture a manuscript while it’s still a draft.",
+    href: "/dashboard/manage/new",
+  },
+  {
+    label: "View API Health",
+    description: "Confirm database connection and stored-procedure wiring.",
+    href: "/api/health",
+  },
 ];
 
-/**
- * Renders the PaperTrail Product Hub home page with an overview header, a "What’s ready" checklist, an "Immediate next steps" roadmap, a "Workflow tips" panel that lists quick links, and a health-check note.
- *
- * @returns The JSX element for the Home page.
- */
 export default function Home() {
   return (
-    <div className="min-h-screen bg-zinc-50 px-6 py-16 font-sans text-zinc-900">
-      <header className="mx-auto max-w-4xl text-center">
-        <p className="text-sm uppercase tracking-[0.3em] text-indigo-500">
+    <div className="min-h-screen bg-slate-50 px-6 py-16 text-slate-900">
+      <header className="mx-auto max-w-5xl">
+        <p className="text-xs uppercase tracking-[0.5em] text-indigo-400">
           SunXHoC Research OS
         </p>
-        <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-          PaperTrail Product Hub
+        <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
+          PaperTrail Academic Suite
         </h1>
-        <p className="mt-4 text-lg text-zinc-600">
-          Manage the entire research-publication lifecycle in one relational platform.
-          This workspace wires up Next.js 16, Prisma, and MySQL so we can focus on
-          building secure CRUD flows and analytics for faculty and graduate teams.
+        <p className="mt-4 text-lg text-slate-600">
+          A professional-grade workspace for the full publication lifecycle:
+          register manuscripts, orchestrate authorship, and monitor outcomes
+          from one secure hub powered by Next.js 16, Prisma, and MySQL.
         </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm font-semibold">
-          <span className="rounded-full bg-white px-4 py-2 text-indigo-600 shadow">Next.js 16 App Router</span>
-          <span className="rounded-full bg-white px-4 py-2 text-indigo-600 shadow">Prisma + MySQL</span>
-          <span className="rounded-full bg-white px-4 py-2 text-indigo-600 shadow">Chart.js Analytics</span>
+        <div className="mt-8 flex flex-wrap gap-4 text-sm font-semibold text-slate-700">
+          <span className="rounded-full bg-white px-4 py-2 shadow">
+            Role-aware dashboard
+          </span>
+          <span className="rounded-full bg-white px-4 py-2 shadow">
+            Stored-procedure backed CRUD
+          </span>
+          <span className="rounded-full bg-white px-4 py-2 shadow">
+            Chart.js analytics
+          </span>
+        </div>
+        <div className="mt-10 flex flex-wrap gap-4">
+          <Link
+            href="/dashboard"
+            className="rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-500"
+          >
+            Enter dashboard
+          </Link>
+          <Link
+            href="/dashboard/manage/new"
+            className="rounded-full border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-700 hover:border-slate-400"
+          >
+            Create paper
+          </Link>
         </div>
       </header>
 
-      <section className="mx-auto mt-16 grid max-w-5xl gap-8 md:grid-cols-2">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
-          <h2 className="text-2xl font-semibold">What&apos;s ready</h2>
-          <ul className="mt-4 list-disc space-y-3 pl-5 text-zinc-600">
-            <li>Base UI scaffolded with Tailwind and the App Router.</li>
-            <li>API folder seeded with sample routes so backend logic can live server-side.</li>
-            <li>Prisma schema expressing the 3NF data model (users, papers, grants, revisions, activity logs, etc.).</li>
-            <li>Dockerized MySQL 8 instance for local + teammate parity.</li>
+      <section className="mx-auto mt-16 grid max-w-5xl gap-6 md:grid-cols-3">
+        {spotlightFeatures.map((feature) => (
+          <div
+            key={feature.title}
+            className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+          >
+            <p className="text-xs uppercase tracking-widest text-slate-400">
+              {feature.title}
+            </p>
+            <p className="mt-3 text-sm text-slate-600">{feature.body}</p>
+            <Link
+              href={feature.href}
+              className="mt-4 inline-flex items-center text-sm font-semibold text-indigo-600 hover:text-indigo-500"
+            >
+              Explore →
+            </Link>
+          </div>
+        ))}
+      </section>
+
+      <section className="mx-auto mt-16 grid max-w-5xl gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-slate-900">
+            Discipline-ready foundations
+          </h2>
+          <ul className="mt-4 list-disc space-y-3 pl-5 text-sm text-slate-600">
+            <li>Normalized Prisma schema for users, papers, grants, and logs.</li>
+            <li>
+              Stored procedures enforcing paper creation, authorship linking,
+              and audit history.
+            </li>
+            <li>Role-based API middleware with token + header guards.</li>
+            <li>React Server Components with App Router layouts and routing.</li>
           </ul>
         </div>
-        <div className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
-          <h2 className="text-2xl font-semibold">Immediate next steps</h2>
-          <ol className="mt-4 list-decimal space-y-3 pl-5 text-zinc-600">
-            {roadmap.map((item) => (
-              <li key={item}>{item}</li>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-slate-900">
+            Quick start actions
+          </h2>
+          <div className="mt-4 space-y-4">
+            {quickStarts.map((entry) => (
+              <Link
+                key={entry.href}
+                href={entry.href}
+                className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3 text-sm text-slate-600 hover:border-indigo-200 hover:text-indigo-600"
+              >
+                <div>
+                  <p className="font-semibold text-slate-900">
+                    {entry.label}
+                  </p>
+                  <p className="text-xs">{entry.description}</p>
+                </div>
+                <span>→</span>
+              </Link>
             ))}
-          </ol>
+          </div>
         </div>
       </section>
 
-      <section className="mx-auto mt-16 max-w-5xl rounded-2xl border border-dashed border-indigo-200 bg-indigo-50 p-8">
-        <h2 className="text-2xl font-semibold text-indigo-800">Workflow tips</h2>
-        <p className="mt-2 text-indigo-900">
-          Develop features inside feature folders (e.g., <code className="rounded bg-white px-1 py-0.5">src/app/(dashboard)/papers</code>),
-          keep Prisma migrations in version control, and use the Docker MySQL instance so local data stays consistent.
-        </p>
-        <div className="mt-6 grid gap-6 md:grid-cols-3">
-          {quickLinks.map((link) => (
-            <div key={link.title} className="rounded-xl bg-white p-4 shadow">
-              <p className="text-sm uppercase text-zinc-500">{link.title}</p>
-              <p className="mt-2 text-sm text-zinc-700">{link.body}</p>
-              <p className="mt-4 text-xs font-semibold text-indigo-500">{link.href}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto mt-16 max-w-4xl text-sm text-zinc-600">
-        <p>
-          Need to validate data flows quickly? Hit the <code className="rounded bg-zinc-100 px-1">/api/health</code> route once the dev server is
-          running (<code className="rounded bg-zinc-100 px-1">npm run dev</code>). It confirms database env vars are wired and acts as a stub for future service tests.
-        </p>
+      <section className="mx-auto mt-16 max-w-5xl rounded-2xl border border-indigo-100 bg-indigo-50 p-8 text-slate-900">
+        <h2 className="text-xl font-semibold text-indigo-900">Operational tips</h2>
+        <ul className="mt-4 list-disc space-y-2 pl-5 text-sm">
+          <li>
+            Use the dashboard navigation to switch between the browser,
+            analytics, and manage views without losing context.
+          </li>
+          <li>
+            For API testing, keep <code className="rounded bg-white px-1">API_AUTH_TOKEN</code> synced across `.env` files; server actions reuse this token.
+          </li>
+          <li>
+            Record demos directly from the dashboard to highlight CRUD, analytics, and error handling behaviors.
+          </li>
+        </ul>
       </section>
     </div>
   );
