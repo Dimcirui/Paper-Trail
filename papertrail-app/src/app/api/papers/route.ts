@@ -279,3 +279,68 @@ export async function DELETE(req: NextRequest) {
     );
   }
 }
+
+/**
+ * Update paper details (Title, Abstract) OR Status.
+ * - Status changes trigger `sp_update_paper_status` (for audit logging).
+ * - Metadata changes use standard Prisma update.
+ */
+export async function PATCH(req: NextRequest) {
+  const auth = authorizeRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ error: auth.message }, { status: 401 });
+  }
+
+  if (!["admin", "principal_investigator", "contributor"].includes(auth.role)) {
+    return NextResponse.json(
+      { error: "Insufficient permissions." },
+      { status: 403 },
+    );
+  }
+
+  let payload: { id: number; title?: string; abstract?: string; status?: PaperStatus };
+  try {
+    payload = await req.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid JSON in request body." },
+      { status: 400 },
+    );
+  }
+
+  if (!payload.id) {
+    return NextResponse.json(
+      { error: "Paper id is required for update." },
+      { status: 400 },
+    );
+  }
+
+  try {
+    if (payload.status) {
+      const actorId = 1; // Hardcoded for demo; replace with authenticated user ID in real app
+
+      await prisma.$executeRaw`CALL sp_update_paper_status(${payload.id}, ${payload.status}, ${actorId})`;
+  }
+
+  if (payload.title || payload.abstract) {
+      await prisma.paper.update({
+        where: { id: payload.id },
+        data: {
+          ...(payload.title && { title: payload.title }),
+          ...(payload.abstract && { abstract: payload.abstract }),
+        },
+      });
+    }
+
+    return NextResponse.json(
+      { message: `Paper with id ${payload.id} has been updated successfully.` },
+      { status: 200 },
+    );
+  } catch (error: unknown) {
+    console.error("Failed to update paper", error);
+    return NextResponse.json(
+      { error: "Unable to update paper. Check database connection." },
+      { status: 500 },
+    );
+  }
+}
