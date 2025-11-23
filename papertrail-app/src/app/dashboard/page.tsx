@@ -1,74 +1,63 @@
+import Link from "next/link";
+import { text } from "stream/consumers";
+import LogoutButton from "./components/LogoutButton";
 
-import React from 'react';
-import DeleteButton from './components/DeleteButton';
-import LogoutButton from './components/LogoutButton';
 
-type Paper = {
-    id: number;
-    title: string;
-    abstract: string | null;
-    status: string;
-    primaryContact?: {
-        userName: string;
-    };
-    venue?: {
-        venueName: string;
-    };
-};
-
-export default async function DashboardPage() {
-    const authToken = process.env.API_AUTH_TOKEN || '';
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-
-    const response = await fetch(`${apiBaseUrl}/api/papers`, {
-        cache: 'no-store',
-        headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'x-user-role': 'admin'
-        }
-    });
-
-    if (!response.ok) {
-        throw new Error('Failed to fetch papers');
+const menuItems = [
+    {
+        title: "Paper Management",
+        description: "Create new papers, update metadata, manage authors or track revisions.",
+        href: "/dashboard/manage",
+        icon: "📄",
+        color: "bg-blue-50 border-blue-200 hover:border-blue-400",
+        textColor: "text-blue-700"
+    },
+    {
+        title: "Paper Broser",
+        description: "Search, filter and browse all research papers in the repository.",
+        href: "/dashboard/browser",
+        icon: "🔍",
+        color: "bg-indigo-50 border-indigo-200 hover:border-indigo-400",
+        textColor: "text-indigo-700"
+    },
+    {
+        title: "Analytics",
+        description: "Visualize research output, funding trends and venue statistics.",
+        href: "/dashboard/analytics",
+        icon: "📊",
+        color: "bg-purple-50 border-purple-200 hover:border-purple-400",
+        textColor: "text-purple-700"
     }
-
-    const data = await response.json();
-    const papers: Paper[] = data.papers || [];
-
+];
+    
+export default function DashboardPage() {
     return (
-        <div className="p-8 bg-gray-50 min-h-screen">
-            <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-            <LogoutButton />
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="min-h-screen bg-zinc-50 flex flex-col">
+            {/* Header */}
+            <header className="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-10">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Research Dashboard</h1>
+                    <p className="text-sm text-gray-500">Select a module to continue.</p>
+                </div>
+            </header>
 
-                {papers.length === 0 ? (
-                    <p className="text-gray-600">No papers available.</p>
-                ) : (
-                    papers.map((paper: Paper) => (
-                        <div key={paper.id} className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                            <div className="flex justify-between items-start">
-                                <span className="inline-block px-2 py-1 text-xs font-semibold text-blue-600 bg-blue-100 rounded-full mb-2">
-                                    {paper.status}
-                                </span>
-                                <span className="text-xs text-gray-400">#{paper.id}</span>
+            {/* Cards */}
+            <main className="flex-grow p-8 max-w-7xl mx-auto w-full flex items-center justify-center">
+                <div className="grid gap-8 md:grid-cols-3 w-full">
+                    {menuItems.map((item) => (
+                        <Link href={item.href} key={item.title} className="group">
+                            <div className={`h-full p-8 rounded-2xl border-2 transition-all duration-200 ease-in-out transform group-hover:-translate-y-1 shadow-sm group-hover:shadow-md ${item.color}`}>
+                                <div className="text-4xl mb-4">{item.icon}</div>
+                                <h2 className={`text-xl font-bold mb-3 ${item.textColor}`}>{item.title}</h2>
+                                <p className="text-gray-600 leading-relaxed">{item.description}</p>
+                                <div className={`mt-6 font-medium flex items-center ${item.textColor} opacity-0 group-hover:opacity-100 transition-opacity`}>
+                                    Access Module →
+                                </div>
                             </div>
-
-                            <h2 className="text-xl font-semibold mb-2">{paper.title}</h2>
-
-                            <p className="text-gray-700 mb-4">
-                                {paper.abstract || 'No abstract provided.'}
-                            </p>
-
-                            <div className="text-sm text-gray-600">
-                                <p> {paper.venue?.venueName || "Unassigned Venue"} </p>
-                                <p> {paper.primaryContact?.userName}</p>
-                            </div>
-
-                            <DeleteButton id={paper.id} token={authToken} />
-                        </div>
-                    ))
-                )}
-            </div>
+                        </Link>
+                    ))}
+                </div>
+            </main>
         </div>
     );
 }
