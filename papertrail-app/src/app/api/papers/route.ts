@@ -66,12 +66,30 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: auth.message }, { status: 401 });
   }
 
+  // Search and filter parameters
+  const { searchParams } = new URL(req.url);
+  const search = searchParams.get("search") || "";
+  const status = searchParams.get("status") || "";
+
+  const whereClause: any = { isDeleted: false };
+
+  if (search) {
+    whereClause.OR = [
+      { title: { contains: search } },
+      { abstract: { contains: search } },
+    ];
+  }
+
+  if (status && status !== "All") {
+    whereClause.status = status;
+  }
+
   const includeEmail = auth.role ? EMAIL_ROLES.has(auth.role) : false;
 
   try {
     const papers = await prisma.paper.findMany({
       take: 10,
-      where: { isDeleted: false },
+      where: whereClause,
       orderBy: { updatedAt: "desc" },
       include: {
         venue: true,
