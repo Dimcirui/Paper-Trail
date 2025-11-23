@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ReactNode } from "react";
-import { canEditContent, getCurrentUserRole } from "@/lib/user";
+import LogoutButton from "./components/LogoutButton";
+import LoginLink from "./components/LoginLink";
+import { canEditContent, getAuthContext } from "@/lib/user";
 
 const navItems = [
   { label: "Activity", href: "/dashboard" },
@@ -16,8 +18,15 @@ type DashboardLayoutProps = {
   children: ReactNode;
 };
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const role = getCurrentUserRole();
+export default async function DashboardLayout({
+  children,
+}: DashboardLayoutProps) {
+  const { role, isAuthenticated, userName } = await getAuthContext();
+  if (!isAuthenticated) {
+    // Middleware should prevent unauthenticated access, but guard defensively.
+    return null;
+  }
+
   const editable = canEditContent(role);
 
   return (
@@ -32,30 +41,55 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               PaperTrail Control Room
             </h1>
             <p className="text-sm text-slate-500">
-              Role: <span className="font-medium capitalize">{role}</span>
+              {isAuthenticated ? (
+                <>
+                  User:{" "}
+                  <span className="font-medium capitalize">
+                    {userName ?? "Authenticated"}
+                  </span>{" "}
+                  · Role:{" "}
+                  <span className="font-medium capitalize">{role}</span>
+                </>
+              ) : (
+                <>
+                  Role: <span className="font-medium capitalize">{role}</span>
+                </>
+              )}
             </p>
           </div>
-          <nav className="flex flex-wrap gap-3 text-sm font-medium text-slate-600">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-full border border-transparent bg-slate-100 px-4 py-2 hover:border-indigo-500 hover:text-indigo-600"
-              >
-                {item.label}
-              </Link>
-            ))}
-            {editable &&
-              manageItems.map((item) => (
+          <div className="flex items-center gap-3">
+            <nav className="flex flex-wrap gap-3 text-sm font-medium text-slate-600">
+              {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-indigo-600 hover:border-indigo-500"
+                  className="rounded-full border border-transparent bg-slate-100 px-4 py-2 hover:border-indigo-500 hover:text-indigo-600"
                 >
                   {item.label}
                 </Link>
               ))}
-          </nav>
+              {editable &&
+                manageItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-indigo-600 hover:border-indigo-500"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+            </nav>
+            <div className="flex items-center gap-2">
+              {!isAuthenticated && <LoginLink />}
+              {isAuthenticated && <LogoutButton showUserLabel={false} />}
+              <Link
+                href="/"
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-600 hover:border-indigo-500 hover:text-indigo-700"
+              >
+                Home
+              </Link>
+            </div>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-6 py-10">{children}</main>

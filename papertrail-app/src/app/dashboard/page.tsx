@@ -12,7 +12,9 @@ type PaperListItem = {
 };
 
 export default async function DashboardHome() {
-  const role = getCurrentUserRole();
+  const role = await getCurrentUserRole();
+  const displayRole = role.replace(/_/g, " ");
+  console.log ("role",role,displayRole)
   const editable = canEditContent(role);
   const papers = (await prisma.paper.findMany({
     take: 10,
@@ -65,8 +67,8 @@ export default async function DashboardHome() {
           <p className="text-xs uppercase tracking-widest text-slate-500">
             Role Permissions
           </p>
-          <p className="mt-2 text-3xl font-semibold text-slate-900 capitalize">
-            {role}
+          <p className="mt-2 text-2xl font-semibold text-slate-900 capitalize break-words">
+            {displayRole}
           </p>
           <p className="text-sm text-slate-500">
             {editable ? "Full manuscript management enabled." : "Read-only."}

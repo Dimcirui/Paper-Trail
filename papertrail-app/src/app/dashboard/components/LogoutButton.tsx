@@ -3,35 +3,36 @@
 import { useRouter } from "next/navigation";
 import { useUser } from "@/lib/UserContext";
 
-export default function LogoutButton() {
-    const { setUser, user } = useUser();
-    const router = useRouter();
+type LogoutButtonProps = {
+  showUserLabel?: boolean;
+};
 
-    const handleLogout = async () => {
-        // 1. Call the logout API
-        await fetch('/api/auth/logout', { method: 'POST' });
+export default function LogoutButton({ showUserLabel = true }: LogoutButtonProps) {
+  const { setUser, user } = useUser();
+  const router = useRouter();
 
-        // 2. Clear user context and local storage
-        setUser(null);
-        localStorage.removeItem('user');
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setUser(null);
+    localStorage.removeItem("user");
+    router.push("/");
+  };
 
-        // 3. Redirect to login page
-        router.push('/login');
-    };
+  if (!user) return null;
 
-    if (!user) return null; // Don't show logout button if not logged in
-
-    return (
-        <div className="flex items-center space-x-4 text-sm">
-            <span className="text-gray-700 font-medium">
-                Logged in as: {user.userName} ({user.role})
-            </span>
-            <button
-                onClick={handleLogout}
-                className="text-sm font-semibold text-red-500 hover:text-red-700 transition-colors"
-            >
-                Logout
-                </button>
-        </div>
-    );
+  return (
+    <div className="flex items-center gap-3 text-sm">
+      {showUserLabel && (
+        <span className="text-gray-700 font-medium">
+          Logged in as: {user.userName} ({user.role})
+        </span>
+      )}
+      <button
+        onClick={handleLogout}
+        className="rounded-full border border-red-100 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-red-500 transition hover:border-red-300 hover:text-red-600"
+      >
+        Log Out
+      </button>
+    </div>
+  );
 }

@@ -4,7 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/lib/UserContext';
 
-export default function LoginForm() {
+type LoginFormProps = {
+  redirectTo?: string;
+};
+
+export default function LoginForm({ redirectTo = '/dashboard' }: LoginFormProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -39,7 +43,7 @@ export default function LoginForm() {
         setUser(userPayload);
         localStorage.setItem('user', JSON.stringify(userPayload)); // Persist user info
         
-        router.push('/dashboard');
+        router.push(redirectTo || '/dashboard');
       } else {
         setError(data.error || 'Authentication failed.');
       }
@@ -65,14 +69,14 @@ export default function LoginForm() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Username or Email</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="papertrail_admin"
+              placeholder="e.g. PaperTrail Admin or admin@papertrail.local"
             />
           </div>
 
@@ -96,6 +100,18 @@ export default function LoginForm() {
             {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
+
+        <div className="rounded-lg bg-indigo-50 p-4 text-xs text-indigo-900">
+          <p className="font-semibold uppercase tracking-wide text-[11px] text-indigo-600 mb-2">
+            Demo Accounts
+          </p>
+          <p>Use any seeded username or email (password: <span className="font-semibold">pass</span>).</p>
+          <ul className="mt-2 space-y-1">
+            <li>• PaperTrail Admin — admin@papertrail.local</li>
+            <li>• Dr. Priya Natarajan — priya.natarajan@yale.edu</li>
+            <li>• Dr. Miguel Alvarez — miguel.alvarez@mit.edu</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

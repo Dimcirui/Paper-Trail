@@ -4,21 +4,21 @@ import Link from "next/link";
 import { getPaperOverview } from "@/lib/server-api";
 import { canEditContent, getCurrentUserRole } from "@/lib/user";
 
-type OverviewParams = {
+type OverviewProps = {
   params: Promise<{ id: string }>;
 };
 
 export async function generateMetadata({
   params,
-}: OverviewParams): Promise<Metadata> {
+}: OverviewProps): Promise<Metadata> {
   const resolved = await params;
   return {
     title: `Paper #${resolved.id} | PaperTrail`,
   };
 }
 
-export default async function PaperOverview({ params }: OverviewParams) {
-  const role = getCurrentUserRole();
+export default async function PaperOverview({ params }: OverviewProps) {
+  const role = await getCurrentUserRole();
   const editable = canEditContent(role);
 
   const resolved = await params;

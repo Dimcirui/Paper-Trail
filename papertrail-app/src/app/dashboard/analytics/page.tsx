@@ -41,14 +41,24 @@ export default async function AnalyticsPage() {
 
   const statusData: StatusSummary[] = statusGroups.map((group) => ({
     status: group.status,
-    count: group._count._all,
+    count: Number(group._count._all),
   }));
 
-  const yearData = Array.isArray(publishedPerYear)
-    ? publishedPerYear.filter((row) => row.year !== null)
+  const yearData: YearSummary[] = Array.isArray(publishedPerYear)
+    ? publishedPerYear
+        .filter((row) => row.year !== null)
+        .map((row) => ({
+          year: Number(row.year),
+          count: Number(row.count),
+        }))
     : [];
 
-  const venueData = venueGroups ?? [];
+  const venueData: VenueSummary[] = Array.isArray(venueGroups)
+    ? venueGroups.map((group) => ({
+        label: group.label,
+        count: Number(group.count),
+      }))
+    : [];
 
   return (
     <div className="space-y-8">
@@ -63,7 +73,7 @@ export default async function AnalyticsPage() {
       </header>
       <AnalyticsCharts
         statusData={statusData}
-        yearData={yearData as YearSummary[]}
+        yearData={yearData}
         venueData={venueData}
       />
     </div>

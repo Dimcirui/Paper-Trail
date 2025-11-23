@@ -1,4 +1,3 @@
-import React from 'react';
 import Link from 'next/link';
 import DeleteButton from '../components/DeleteButton';
 import LogoutButton from '../components/LogoutButton';
