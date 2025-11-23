@@ -1,18 +1,19 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getPaperOverview } from "@/lib/server-api";
 import { canEditContent, getCurrentUserRole } from "@/lib/user";
 
 type OverviewParams = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 export async function generateMetadata({
   params,
 }: OverviewParams): Promise<Metadata> {
+  const resolved = await params;
   return {
-    title: `Paper #${params.id} | PaperTrail`,
+    title: `Paper #${resolved.id} | PaperTrail`,
   };
 }
 
@@ -20,7 +21,8 @@ export default async function PaperOverview({ params }: OverviewParams) {
   const role = getCurrentUserRole();
   const editable = canEditContent(role);
 
-  const data = await getPaperOverview(params.id);
+  const resolved = await params;
+  const data = await getPaperOverview(resolved.id);
   if (!data.paper) {
     notFound();
   }
