@@ -35,6 +35,20 @@ const mockPIUser = {
     role: { roleName: "Principal Investigator" },
 };
 
+const createRequest = (
+  body: Record<string, unknown> | null,
+  url: string = "http://localhost/api/auth/login",
+) => {
+  const headers = new Headers();
+  headers.set("content-type", "application/json");
+
+  return new NextRequest(url, {
+    method: "POST",
+    body: JSON.stringify(body),
+    headers,
+  });
+};
+
 describe("/api/auth/login POST handler", () => {
     let consoleErrorSpy: jest.SpyInstance;
 
@@ -74,8 +88,8 @@ describe("/api/auth/login POST handler", () => {
         const response = await POST(request);
         const payload = await response.json();
 
-        exprect(response.status).toBe(400);
-        expect(payload.error).toBe("Username (or email) and password are required.");
+        expect(response.status).toBe(400);
+        expect(payload.error).toBe("Email and password are required.");
     });
 
     // ... Test cases for user lookup and mapping ...
