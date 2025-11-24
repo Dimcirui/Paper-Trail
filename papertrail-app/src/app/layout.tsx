@@ -1,18 +1,14 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ToasterProvider } from "@/components/providers/toaster-provider";
 import { ClientProviders } from "./ClientProviders";
 
 export const metadata: Metadata = {
-  title: "PaperTrail",
-  description: "Research-publication management and collaboration platform.",
+  title: "PaperTrail Dashboard",
+  description:
+    "Academic workflow hub for managing research papers, authors, and analytics.",
 };
 
-/**
- * Provides the application's root HTML structure and global font/antialiasing classes.
- *
- * @param children - The React nodes to render inside the document body.
- * @returns The root HTML element containing the provided `children`.
- */
 export default function RootLayout({
   children,
 // }: Readonly<{
@@ -21,8 +17,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-zinc-50 font-sans text-zinc-900 antialiased">
+      <body className="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
         <ClientProviders>{children}</ClientProviders>
+        <ToasterProvider />
       </body>
     </html>
   );
