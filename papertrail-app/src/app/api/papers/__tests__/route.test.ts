@@ -104,13 +104,13 @@ describe("/api/papers route handlers", () => {
       expect(response.status).toBe(200);
       expect(payload.papers).toEqual(mockResult);
       expect(mockFindMany).toHaveBeenCalledWith({
-        take: 10,
-        where: { isDeleted: false },
+        take: 20,
+        where: { isDeleted: false, status: "Published" },
         orderBy: { updatedAt: "desc" },
         include: {
           venue: true,
           primaryContact: {
-            select: { userName: true },
+            select: { userName: true, email: false },
           },
           topics: { select: { topic: true } },
         },
@@ -130,6 +130,8 @@ describe("/api/papers route handlers", () => {
 
       expect(mockFindMany).toHaveBeenCalledWith(
         expect.objectContaining({
+          take: 20,
+          where: expect.objectContaining({ isDeleted: false }),
           include: expect.objectContaining({
             primaryContact: {
               select: { userName: true, email: true },
