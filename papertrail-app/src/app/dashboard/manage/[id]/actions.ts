@@ -6,7 +6,26 @@ import { prisma } from "@/lib/prisma";
 import { patchPaper } from "@/lib/server-api";
 import { PAPER_STATUSES } from "@/lib/papers";
 
-const ACTOR_ID = Number(process.env.NEXT_PUBLIC_DEFAULT_ACTOR_ID ?? 1);
+const CONFIGURED_ACTOR_ID = Number(
+  process.env.NEXT_PUBLIC_DEFAULT_ACTOR_ID ?? 1,
+);
+
+async function resolveActorId(): Promise<number | null> {
+  if (Number.isFinite(CONFIGURED_ACTOR_ID)) {
+    const exists = await prisma.user.count({
+      where: { id: CONFIGURED_ACTOR_ID },
+    });
+    if (exists) {
+      return CONFIGURED_ACTOR_ID;
+    }
+  }
+
+  const fallback = await prisma.user.findFirst({
+    where: { roleId: 1 },
+    select: { id: true },
+  });
+  return fallback?.id ?? null;
+}
 
 const updatePaperSchema = z.object({
   id: z.number(),
@@ -54,7 +73,8 @@ export async function addAuthorAction(input: unknown) {
   }
 
   try {
-    await prisma.$executeRaw`CALL sp_assign_author(${parsed.data.paperId}, ${parsed.data.userId}, ${parsed.data.authorOrder ?? null}, ${null}, ${ACTOR_ID})`;
+    const actorId = await resolveActorId();
+    await prisma.$executeRaw`CALL sp_assign_author(${parsed.data.paperId}, ${parsed.data.userId}, ${parsed.data.authorOrder ?? null}, ${null}, ${actorId})`;
     revalidatePath(`/dashboard/manage/${parsed.data.paperId}`);
     return { success: true };
   } catch (error) {
