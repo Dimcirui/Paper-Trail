@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { PrismaClientKnownRequestError, PrismaClientValidationError } from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/prisma";
 import { PAPER_STATUSES, type PaperStatus } from "@/lib/papers";
 import { authorizeRequest, hasWritePermission } from "./auth";
@@ -72,7 +72,10 @@ export async function GET(req: NextRequest) {
       include: {
         venue: true,
         primaryContact: {
-          select: { userName: true, email: true },
+          select: { 
+            userName: true,
+            email: role === "admin" || role === "principal_investigator" ? true : false,
+          },
         },
         topics: {
           select: {
@@ -170,6 +173,12 @@ export async function POST(req: NextRequest) {
     if (error instanceof PrismaClientKnownRequestError) {
       return NextResponse.json(
         { error: `Invalid data: ${error.message}` },
+        { status: 400 },
+      );
+    }
+    if (error instanceof PrismaClientValidationError) {
+      return NextResponse.json(
+        { error: `Data validation error: ${error.message}` },
         { status: 400 },
       );
     }
