@@ -178,7 +178,7 @@ export async function POST(req: NextRequest) {
     }
     if (error instanceof PrismaClientValidationError) {
       return NextResponse.json(
-        { error: `Data validation error: ${error.message}` },
+        { error: `Invalid payload: Field types and enums mismatch.` },
         { status: 400 },
       );
     }

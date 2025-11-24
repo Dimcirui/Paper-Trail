@@ -1,4 +1,5 @@
 import type { Config } from "jest";
+import { transform } from "zod";
 
 const config: Config = {
   preset: "ts-jest",
@@ -21,6 +22,17 @@ const config: Config = {
       statements: 85,
     },
   },
+  transform: {
+    '^.+\\.(ts|tsx|js|jsx|mjs)$': [
+      'ts-jest',
+      {
+        tsconfig: './tsconfig.json' 
+      }
+    ]
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(jose)/)' 
+  ],
 };
 
 export default config;
