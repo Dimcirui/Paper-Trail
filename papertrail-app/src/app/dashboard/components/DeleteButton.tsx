@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/lib/UserContext";
 
-export default function DeleteButton( { id, token }: { id: number; token: string } ) {
+export default function DeleteButton( { id }: { id: number; token: string } ) {
     const router = useRouter();
     const [isDeleting, setIsDeleting] = useState(false);
     const { user } = useUser();

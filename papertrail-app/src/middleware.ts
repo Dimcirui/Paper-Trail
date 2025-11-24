@@ -35,11 +35,18 @@ export async function middleware(request: NextRequest) {
     const isAuthPath = authPaths.includes(pathname);
 
     if (isProtectedPath && !isAuthenticated) {
-        return NextResponse.redirect(new URL("/login", request.url));
+        const loginUrl = new URL("/login", request.url);
+        loginUrl.searchParams.set("next", pathname);
+        return NextResponse.redirect(loginUrl);
     }
 
     if (isAuthPath && isAuthenticated) {
-        return NextResponse.redirect(new URL("/dashboard", request.url));
+        const nextPath = request.nextUrl.searchParams.get("next");
+        const target =
+            nextPath && nextPath.startsWith("/")
+                ? nextPath
+                : "/dashboard";
+        return NextResponse.redirect(new URL(target, request.url));
     }
 
     return NextResponse.next();
