@@ -17,6 +17,23 @@ type DashboardHomeProps = {
 
 const PAGE_SIZE = 15;
 
+const statusClasses: Record<string, string> = {
+  DRAFT: "bg-slate-100 text-slate-700",
+  SUBMITTED: "bg-sky-50 text-sky-700",
+  UNDERREVIEW: "bg-indigo-50 text-indigo-600",
+  ACCEPTED: "bg-emerald-50 text-emerald-700",
+  PUBLISHED: "bg-emerald-50 text-emerald-700 border border-emerald-100",
+  REJECTED: "bg-rose-50 text-rose-600 border border-rose-100",
+  WITHDRAWN: "bg-slate-50 text-slate-700 border border-slate-200",
+  "IN REVISION": "bg-purple-50 text-purple-700",
+  ONHOLD: "bg-orange-50 text-orange-700",
+};
+
+function getStatusClasses(status: string) {
+  const normalized = status.toUpperCase().replace(/\s+/g, " ");
+  return statusClasses[normalized] ?? "bg-slate-100 text-slate-600";
+}
+
 export default async function DashboardHome({ searchParams }: DashboardHomeProps) {
   const role = await getCurrentUserRole();
   const displayRole = role.replace(/_/g, " ");
@@ -146,7 +163,9 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
                     {paper.venue?.venueName ?? "Unassigned"}
                   </td>
                   <td className="px-4 py-4">
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getStatusClasses(paper.status)}`}
+                    >
                       {paper.status}
                     </span>
                   </td>
