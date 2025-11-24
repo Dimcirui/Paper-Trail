@@ -5,8 +5,7 @@ import LoginLink from "./components/LoginLink";
 import { canEditContent, getAuthContext } from "@/lib/user";
 
 const navItems = [
-  { label: "Activity", href: "/dashboard" },
-  { label: "Browser", href: "/dashboard/browser" },
+  { label: "Dashboard", href: "/dashboard" },
   { label: "Analytics", href: "/dashboard/analytics" },
 ];
 
