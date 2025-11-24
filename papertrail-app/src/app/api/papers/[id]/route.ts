@@ -77,9 +77,12 @@ export async function GET(
   }
 }
 
+const MAX_ABSTRACT_LENGTH = 191;
+const abstractSchema = z.string().max(MAX_ABSTRACT_LENGTH);
+
 const updateSchema = z.object({
-  title: z.string().min(3).optional(),
-  abstract: z.string().optional(),
+  title: z.string().min(3).max(191).optional(),
+  abstract: abstractSchema.optional(),
   status: z.string().optional(),
 });
 
@@ -124,7 +127,8 @@ export async function PATCH(
     updateData.title = payload.data.title;
   }
   if (payload.data.abstract !== undefined) {
-    updateData.abstract = payload.data.abstract;
+    const normalizedAbstract = abstractSchema.parse(payload.data.abstract);
+    updateData.abstract = normalizedAbstract.slice(0, MAX_ABSTRACT_LENGTH);
   }
   if (payload.data.status) {
     if (!isPaperStatus(payload.data.status)) {

@@ -146,7 +146,9 @@ export async function POST(req: NextRequest) {
     const paper = await prisma.paper.create({
       data: {
         title: payload.title,
-        abstract: payload.abstract ?? "",
+        abstract: payload.abstract
+          ? payload.abstract.slice(0, 191)
+          : "",
         status: isPaperStatus(payload.status)
           ? payload.status
           : DEFAULT_PAPER_STATUS,
