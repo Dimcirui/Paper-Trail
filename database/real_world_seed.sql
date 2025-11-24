@@ -8,10 +8,10 @@ TRUNCATE TABLE PaperGrant;
 TRUNCATE TABLE PaperTopic;
 TRUNCATE TABLE Authorship;
 TRUNCATE TABLE Paper;
-TRUNCATE TABLE User;
 TRUNCATE TABLE `Grant`;
 TRUNCATE TABLE Topic;
 TRUNCATE TABLE Venue;
+TRUNCATE TABLE User;
 TRUNCATE TABLE Role;
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -149,6 +149,8 @@ BEGIN
   DECLARE contrib_a INT;
   DECLARE contrib_b INT;
   DECLARE version_label VARCHAR(20);
+  DECLARE base_title VARCHAR(255);
+  DECLARE focus_label VARCHAR(255);
   DECLARE venue_total INT;
   DECLARE topic_total INT;
   DECLARE grant_total INT;
@@ -174,24 +176,53 @@ BEGIN
     SET contrib_a = 300 + (i MOD 40);
     SET contrib_b = 320 + (i MOD 20);
 
+    SET base_title = ELT(
+      (i MOD 15) + 1,
+      'Edge Genomics Workflows',
+      'Auditable Responsible AI Pipelines',
+      'Clinical LLM Copilots',
+      'Embodied Field Robotics',
+      'Self-Healing Distributed Systems',
+      'Geospatial Change Detection',
+      'Autonomous Fleet Safety',
+      'Energy-Twin Analytics',
+      'Human-AI Decision Studios',
+      'Extreme Weather Digital Twins',
+      'Neural Cellular Biofoundry',
+      'Coastal Resilience Observatories',
+      'Planetary Health Monitoring Stack',
+      'Bio-inspired Soft Manipulation',
+      'Quantum-Assisted Climate Forecasts'
+    );
+
+    SET focus_label = ELT(
+      ((i DIV 15) MOD 10) + 1,
+      'MIT CSAIL',
+      'Stanford HAI',
+      'Berkeley Sky Computing',
+      'CMU Robotics Institute',
+      'Oxford Big Data Institute',
+      'UT Austin Energy Consortium',
+      'EPFL Alpine Research',
+      'UC Chile Andes Lab',
+      'Tokyo U Autonomous Systems',
+      'UChicago Data Science Institute'
+    );
+
     SET title_text = CONCAT(
-      ELT(topic_id,
-        'Graph Transformers for Climate Extremes',
-        'Auditable Responsible AI Pipelines',
-        'Clinical LLM Copilots',
-        'Edge Genomics Workflows',
-        'Embodied Field Robotics',
-        'Self-Healing Distributed Systems',
-        'Geospatial Change Detection',
-        'Autonomous Fleet Safety',
-        'Energy-Twin Analytics',
-        'Human-AI Decision Studios'),
-      ' — Cohort ',
-      2020 + (i MOD 5)
+      base_title,
+      ' - ',
+      focus_label,
+      ' Cohort ',
+      2020 + (i MOD 5),
+      ' | Program ',
+      LPAD(i + 1, 3, '0')
     );
 
     SET abstract_text = CONCAT(
-      'Longitudinal study on ',
+      'Longitudinal study "',
+      base_title,
+      '" exploring ',
       LOWER(ELT(topic_id,
         'climate modeling at continental scales',
         'transparent AI governance',
@@ -203,7 +234,9 @@ BEGIN
         'autonomy verification',
         'adaptive energy models',
         'human-AI teaming')),
-      ' leveraging datasets gathered between ',
+      ' and led with ',
+      focus_label,
+      ', leveraging datasets gathered between ',
       2020 + (i MOD 3),
       ' and ',
       2023 + (i MOD 3),
@@ -215,12 +248,12 @@ BEGIN
       primaryContactId, venueId, isDeleted, createdAt, updatedAt
     )
     VALUES (
-      paper_id, title_text, abstract_text, status_label,
+      paper_id, title_text, LEFT(abstract_text, 191), status_label,
       submission_date, publication_date, pi_id, venue_id, FALSE, NOW(), NOW()
     )
     ON DUPLICATE KEY UPDATE
       title = VALUES(title),
-      abstract = VALUES(abstract),
+      abstract = LEFT(VALUES(abstract), 191),
       status = VALUES(status),
       submissionDate = VALUES(submissionDate),
       publicationDate = VALUES(publicationDate),
