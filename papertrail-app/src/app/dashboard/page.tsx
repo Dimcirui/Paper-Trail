@@ -59,9 +59,10 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
     } : {})
   };
 
-  const [totalPapers, draftCount, papers] = await Promise.all([
+  const [systemTotal, activeDrafts, filteredTotal, papers] = await Promise.all([
     prisma.paper.count({ where: { isDeleted: false } }),
     prisma.paper.count({ where: { isDeleted: false, status: "Draft" } }),
+    prisma.paper.count({ where: whereClause }),
     prisma.paper
       .findMany({
         where: whereClause,
@@ -89,9 +90,21 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
       ),
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(totalPapers / PAGE_SIZE));
-  const startIndex = totalPapers === 0 ? 0 : skip + 1;
-  const endIndex = skip + papers.length;
+  const totalPages = Math.max(1, Math.ceil(filteredTotal / PAGE_SIZE));
+  const startIndex = filteredTotal === 0 ? 0 : skip + 1;
+  const endIndex = Math.min(skip + PAGE_SIZE, filteredTotal);
+
+  function buildQuery(newPage: number) {
+    const queryParams = new URLSearchParams();
+    if (query) {
+      queryParams.set("search", query);
+    }
+    if (statusFilter) {
+      queryParams.set("status", statusFilter);
+    }
+    queryParams.set("page", newPage.toString());
+    return `/dashboard?${queryParams.toString()}`;
+  }
 
   return (
     <div className="space-y-6 pt-2">
@@ -102,7 +115,7 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
             Recent Manuscripts
           </p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">
-            {totalPapers}
+            {systemTotal}
           </p>
           <p className="text-sm text-slate-500">
             Total manuscripts currently in the system.
@@ -113,7 +126,7 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
             Editorial Throughput
           </p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">
-            {draftCount}
+            {activeDrafts}
           </p>
           <p className="text-sm text-slate-500">
             Drafts awaiting submission or assignment.
@@ -231,12 +244,12 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
             <span className="font-semibold">
               {startIndex}–{endIndex}
             </span>{" "}
-            of {totalPapers}
+            of {filteredTotal}
           </p>
           <div className="flex gap-2">
             {page > 1 && (
               <Link
-                href={page - 1 === 1 ? "/dashboard" : `/dashboard?page=${page - 1}`}
+                href={buildQuery(page - 1)}
                 className="rounded-full border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:border-indigo-500 hover:text-indigo-600"
               >
                 Previous
@@ -244,7 +257,7 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
             )}
             {page < totalPages && (
               <Link
-                href={`/dashboard?page=${page + 1}`}
+                href={buildQuery(page + 1)}
                 className="rounded-full border border-indigo-100 bg-indigo-50 px-4 py-2 font-semibold text-indigo-700 hover:border-indigo-500"
               >
                 Next
