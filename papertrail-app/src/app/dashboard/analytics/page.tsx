@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { AnalyticsCharts } from "./charts";
 
+type GrantSummary = {
+  label: string;
+  count: number;
+};
+
 type StatusSummary = {
   status: string;
   count: number;
@@ -17,7 +22,7 @@ type VenueSummary = {
 };
 
 export default async function AnalyticsPage() {
-  const [statusGroups, publishedPerYear, venueGroups] = await Promise.all([
+  const [statusGroups, publishedPerYear, venueGroups, grantGroups] = await Promise.all([
     prisma.paper.groupBy({
       by: ["status"],
       _count: { _all: true },
@@ -34,6 +39,14 @@ export default async function AnalyticsPage() {
       FROM Paper p
       INNER JOIN Venue v ON v.id = p.venueId
       GROUP BY v.id, v.venueName
+      ORDER BY count DESC
+      LIMIT 5
+    `,
+    prisma.$queryRaw<GrantSummary[]>`
+      SELECT g.grantName as label, COUNT(pg.paperId) as count
+      FROM \`Grant\` g
+      INNER JOIN PaperGrant pg ON pg.grantId = g.id
+      GROUP BY g.id, g.grantName
       ORDER BY count DESC
       LIMIT 5
     `,
@@ -60,6 +73,13 @@ export default async function AnalyticsPage() {
       }))
     : [];
 
+  const grantData: GrantSummary[] = Array.isArray(grantGroups)
+    ? grantGroups.map((group) => ({
+        label: group.label,
+        count: Number(group.count),
+      }))
+    : [];
+
   return (
     <div className="space-y-8">
       <header>
@@ -75,6 +95,7 @@ export default async function AnalyticsPage() {
         statusData={statusData}
         yearData={yearData}
         venueData={venueData}
+        grantData={grantData}
       />
     </div>
   );

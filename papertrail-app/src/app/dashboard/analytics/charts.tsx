@@ -20,6 +20,11 @@ ChartJS.register(
   Legend,
 );
 
+type GrantSummary = {
+  label: string;
+  count: number;
+};
+
 type StatusSummary = {
   status: string;
   count: number;
@@ -39,12 +44,14 @@ type AnalyticsChartsProps = {
   statusData: StatusSummary[];
   yearData: YearSummary[];
   venueData: VenueSummary[];
+  grantData: GrantSummary[];
 };
 
 export function AnalyticsCharts({
   statusData,
   yearData,
   venueData,
+  grantData,
 }: AnalyticsChartsProps) {
   const statusChart = {
     labels: statusData.map((item) => item.status),
@@ -95,7 +102,20 @@ export function AnalyticsCharts({
     ],
   };
 
+  const grantChart = {
+    labels: grantData.map((item) => item.label),
+    datasets: [
+      {
+        label: "Funded Papers",
+        data: grantData.map((item) => item.count),
+        backgroundColor: "#6366F1",
+        borderRadius: 6,
+      },
+    ],
+  };
+
   const venueChartHeight = Math.max(venueData.length * 48, 240);
+  const grantChartHeight = Math.max(grantData.length * 48, 240);
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -175,6 +195,7 @@ export function AnalyticsCharts({
           />
         </div>
       </div>
+
       <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm lg:col-span-2">
         <div className="flex items-center justify-between">
           <div>
@@ -217,6 +238,27 @@ export function AnalyticsCharts({
               },
               indexAxis: "y" as const,
             }}
+          />
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm lg:col-span-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900"> Top Grants </h3>
+            <p className="text-xs text-slate-500"> Most active funding sources. </p>
+          </div>
+        </div>
+        <div className="mt-6 w-full" style={{ height: `${grantChartHeight}px` }}>
+          <Bar 
+            data={grantChart} 
+            options={{ 
+                indexAxis: 'y', 
+                maintainAspectRatio: false, 
+                responsive: true, 
+                scales: { x: { beginAtZero: true, grid: { color: "#f1f5f9" }, border: { display: false } }, y: { grid: { display: false }, border: { display: false } } }, 
+                plugins: { legend: { display: false } } 
+            }} 
           />
         </div>
       </div>

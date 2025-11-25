@@ -155,6 +155,7 @@ BEGIN
   DECLARE topic_total INT;
   DECLARE grant_total INT;
   DECLARE base_date DATE DEFAULT '2020-01-01';
+  DECLARE v_rand DECIMAL(10,4); -- Random placeholder
 
   SELECT COUNT(*) INTO venue_total FROM Venue;
   SELECT COUNT(*) INTO topic_total FROM Topic;
@@ -162,16 +163,51 @@ BEGIN
 
   WHILE i < 150 DO
     SET paper_id = 2000 + i;
-    SET status_label = ELT((i MOD 7) + 1, 'Draft', 'Submitted', 'UnderReview', 'Accepted', 'Published', 'Rejected', 'Withdrawn');
-    SET topic_id = (i MOD topic_total) + 1;
-    SET secondary_topic = ((i + 3) MOD topic_total) + 1;
-    SET venue_id = (i MOD venue_total) + 1;
-    SET grant_id = (i MOD grant_total) + 1;
-    SET submission_date = DATE_ADD(base_date, INTERVAL (i * 12) DAY);
+    
+    -- [Optimized] Weighted Status Distribution
+    SET v_rand = RAND();
+    IF v_rand < 0.35 THEN SET status_label = 'Published';
+    ELSEIF v_rand < 0.55 THEN SET status_label = 'Rejected';
+    ELSEIF v_rand < 0.70 THEN SET status_label = 'Draft';
+    ELSEIF v_rand < 0.80 THEN SET status_label = 'Submitted';
+    ELSEIF v_rand < 0.90 THEN SET status_label = 'UnderReview';
+    ELSEIF v_rand < 0.97 THEN SET status_label = 'Accepted';
+    ELSE SET status_label = 'Withdrawn';
+    END IF;
+
+    -- [Optimized] Weighted Topic Distribution (Favor ID 1-4)
+    SET v_rand = RAND();
+    IF v_rand < 0.6 THEN 
+        SET topic_id = 1 + FLOOR(RAND() * 4); -- Topics 1-4 (60% chance)
+    ELSE 
+        SET topic_id = 5 + FLOOR(RAND() * (topic_total - 4)); -- Topics 5-10
+    END IF;
+    SET secondary_topic = ((topic_id + 2) MOD topic_total) + 1;
+
+    -- [Optimized] Weighted Venue Distribution (Favor ID 1-3)
+    SET v_rand = RAND();
+    IF v_rand < 0.5 THEN 
+        SET venue_id = 1 + FLOOR(RAND() * 3); -- Venues 1-3 (50% chance)
+    ELSE 
+        SET venue_id = 4 + FLOOR(RAND() * (venue_total - 3)); -- Venues 4-10
+    END IF;
+
+    -- [Optimized] Grant Distribution (Favor Grant 1)
+    IF RAND() < 0.4 THEN 
+        SET grant_id = 1; 
+    ELSE 
+        SET grant_id = 1 + FLOOR(RAND() * grant_total);
+        IF grant_id > grant_total THEN SET grant_id = grant_total; END IF;
+    END IF;
+
+    -- [Optimized] Variable Time Intervals (Random 1-20 days)
+    SET submission_date = DATE_ADD(base_date, INTERVAL (i * (1 + FLOOR(RAND() * 20))) DAY);
+    
     SET publication_date = CASE
-      WHEN status_label IN ('Accepted', 'Published') THEN DATE_ADD(submission_date, INTERVAL 120 DAY)
+      WHEN status_label IN ('Accepted', 'Published') THEN DATE_ADD(submission_date, INTERVAL (90 + FLOOR(RAND() * 180)) DAY)
       ELSE NULL
     END;
+
     SET pi_id = 200 + (i MOD 24);
     SET contrib_a = 300 + (i MOD 40);
     SET contrib_b = 320 + (i MOD 20);
