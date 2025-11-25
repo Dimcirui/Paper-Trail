@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { canEditContent, getCurrentUserRole } from "@/lib/user";
+import { DashboardSearch } from "./dashboard-search";
 
 type PaperListItem = {
   id: number;
@@ -40,17 +41,31 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
   const editable = canEditContent(role);
 
   const params = await searchParams;
+  const query = typeof params.search === 'string' ? params.search : undefined;
+  const statusFilter = typeof params.status === 'string' ? params.status : undefined;
   const rawPageParam = Array.isArray(params?.page) ? params.page[0] : params?.page;
   const parsedPage = Number.parseInt(rawPageParam ?? "1", 10);
   const page = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
   const skip = (page - 1) * PAGE_SIZE;
 
-  const [totalPapers, draftCount, papers] = await Promise.all([
+  const whereClause: any = { 
+    isDeleted: false,
+    ...(statusFilter ? { status: statusFilter } : {}),
+    ...(query ? {
+        OR: [
+            { title: { contains: query } },
+            { abstract: { contains: query } }
+        ]
+    } : {})
+  };
+
+  const [systemTotal, activeDrafts, filteredTotal, papers] = await Promise.all([
     prisma.paper.count({ where: { isDeleted: false } }),
     prisma.paper.count({ where: { isDeleted: false, status: "Draft" } }),
+    prisma.paper.count({ where: whereClause }),
     prisma.paper
       .findMany({
-        where: { isDeleted: false },
+        where: whereClause,
         orderBy: { updatedAt: "desc" },
         skip,
         take: PAGE_SIZE,
@@ -75,19 +90,32 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
       ),
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(totalPapers / PAGE_SIZE));
-  const startIndex = totalPapers === 0 ? 0 : skip + 1;
-  const endIndex = skip + papers.length;
+  const totalPages = Math.max(1, Math.ceil(filteredTotal / PAGE_SIZE));
+  const startIndex = filteredTotal === 0 ? 0 : skip + 1;
+  const endIndex = Math.min(skip + PAGE_SIZE, filteredTotal);
+
+  function buildQuery(newPage: number) {
+    const queryParams = new URLSearchParams();
+    if (query) {
+      queryParams.set("search", query);
+    }
+    if (statusFilter) {
+      queryParams.set("status", statusFilter);
+    }
+    queryParams.set("page", newPage.toString());
+    return `/dashboard?${queryParams.toString()}`;
+  }
 
   return (
     <div className="space-y-6 pt-2">
+
       <section className="grid gap-3 md:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs uppercase tracking-widest text-slate-500">
             Recent Manuscripts
           </p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">
-            {totalPapers}
+            {systemTotal}
           </p>
           <p className="text-sm text-slate-500">
             Total manuscripts currently in the system.
@@ -98,7 +126,7 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
             Editorial Throughput
           </p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">
-            {draftCount}
+            {activeDrafts}
           </p>
           <p className="text-sm text-slate-500">
             Drafts awaiting submission or assignment.
@@ -117,17 +145,21 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
         </div>
       </section>
 
-      <section className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-xl font-semibold text-slate-900">
-              Unified paper feed
-            </h2>
-            <p className="text-sm text-slate-500">
-              Browse, open, or manage any manuscript from a single view.
-            </p>
+      <section className="space-y-4">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">
+                Unified paper feed
+              </h2>
+              <p className="text-sm text-slate-500">
+                Browse, open, or manage any manuscript from a single view.
+              </p>
+            </div>
           </div>
+          <DashboardSearch />
         </div>
+
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
@@ -205,18 +237,19 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
             </tbody>
           </table>
         </div>
+
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
           <p>
             Showing{" "}
             <span className="font-semibold">
               {startIndex}–{endIndex}
             </span>{" "}
-            of {totalPapers}
+            of {filteredTotal}
           </p>
           <div className="flex gap-2">
             {page > 1 && (
               <Link
-                href={page - 1 === 1 ? "/dashboard" : `/dashboard?page=${page - 1}`}
+                href={buildQuery(page - 1)}
                 className="rounded-full border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:border-indigo-500 hover:text-indigo-600"
               >
                 Previous
@@ -224,7 +257,7 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
             )}
             {page < totalPages && (
               <Link
-                href={`/dashboard?page=${page + 1}`}
+                href={buildQuery(page + 1)}
                 className="rounded-full border border-indigo-100 bg-indigo-50 px-4 py-2 font-semibold text-indigo-700 hover:border-indigo-500"
               >
                 Next

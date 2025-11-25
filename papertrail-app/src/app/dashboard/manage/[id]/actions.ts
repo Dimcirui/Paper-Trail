@@ -6,6 +6,57 @@ import { prisma } from "@/lib/prisma";
 import { patchPaper } from "@/lib/server-api";
 import { PAPER_STATUSES } from "@/lib/papers";
 
+const linkGrantSchema = z.object({
+  paperId: z.number(),
+  grantId: z.number(),
+});
+
+export async function linkGrantAction(input: unknown) {
+  const parsed = linkGrantSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: "Invalid grant payload." };
+  }
+
+  try {
+    const actorId = await resolveActorId();
+    await prisma.$executeRaw`CALL sp_link_grant_to_paper(${parsed.data.paperId}, ${parsed.data.grantId}, ${actorId})`;
+
+    revalidatePath(`/dashboard/manage/${parsed.data.paperId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Link grant error:", error);
+    return {
+      error: "Unable to link grant. It might already be linked.",
+    };
+  }
+}
+
+export async function unlinkGrantAction(input: unknown) {
+  const parsed = linkGrantSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: "Invalid grant payload." };
+  }
+
+  try {
+    await prisma.paperGrant.delete({
+      where: {
+        paperId_grantId: {
+          paperId: parsed.data.paperId,
+          grantId: parsed.data.grantId,
+        },
+      },
+    });
+
+    revalidatePath(`/dashboard/manage/${parsed.data.paperId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Unlink grant error:", error);
+    return {
+      error: "Unable to remove grant.",
+    };
+  }
+}
+
 const CONFIGURED_ACTOR_ID = Number(
   process.env.NEXT_PUBLIC_DEFAULT_ACTOR_ID ?? 1,
 );
