@@ -24,15 +24,23 @@ export default async function ManagePaperPage({ params }: ManageParams) {
     notFound();
   }
 
-  const paper = await prisma.paper.findUnique({
-    where: { id },
-    include: {
-      authors: {
-        include: { user: true },
-        orderBy: { authorOrder: "asc" },
+  const [paper, allGrants] = await Promise.all([
+    prisma.paper.findUnique({
+      where: { id },
+      include: {
+        authors: {
+          include: { user: true },
+          orderBy: { authorOrder: "asc" },
+        },
+        grants: {
+          include: { grant: true },
+        },
       },
-    },
-  });
+    }),
+    prisma.grant.findMany({
+      orderBy: { grantName: "asc" },
+    }),
+  ]);
 
   if (!paper) {
     notFound();
@@ -43,6 +51,9 @@ export default async function ManagePaperPage({ params }: ManageParams) {
     take: 100,
   });
   const existingAuthorIds = new Set(paper.authors.map((author) => author.userId));
+
+  const linkedGrantIds = new Set(paper.grants.map((pg) => pg.grantId));
+  const availableGrants = allGrants.filter((g) => !linkedGrantIds.has(g.id));
 
   return (
     <ManagePaperPanel
@@ -59,6 +70,15 @@ export default async function ManagePaperPage({ params }: ManageParams) {
         email: author.user.email,
         authorOrder: author.authorOrder,
         notes: author.contributionNotes ?? "",
+      }))}
+      currentGrants={paper.grants.map((pg) => ({
+        grantId: pg.grantId,
+        grantName: pg.grant.grantName,
+        sponsor: pg.grant.sponsor ?? "Unknown Sponsor",
+      }))}
+      availableGrants={availableGrants.map((grant) => ({
+        id: grant.id,
+        label: `${grant.grantName} (${grant.sponsor})`,
       }))}
       availableAuthors={potentialAuthors
         .filter((user) => !existingAuthorIds.has(user.id))

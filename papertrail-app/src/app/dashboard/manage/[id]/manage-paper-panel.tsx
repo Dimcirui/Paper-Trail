@@ -8,6 +8,8 @@ import {
   addAuthorAction,
   removeAuthorAction,
   reorderAuthorAction,
+  linkGrantAction,
+  unlinkGrantAction,
 } from "./actions";
 
 type Author = {
@@ -17,6 +19,12 @@ type Author = {
   email: string;
   authorOrder: number;
   notes: string;
+};
+
+type LinkedGrant = {
+  grantId: number;
+  grantName: string;
+  sponsor: string;
 };
 
 type Option = {
@@ -32,6 +40,8 @@ type ManagePaperPanelProps = {
     status: string;
   };
   authors: Author[];
+  currentGrants: LinkedGrant[];
+  availableGrants: Option[];
   statuses: readonly string[];
   availableAuthors: Option[];
 };
@@ -39,6 +49,8 @@ type ManagePaperPanelProps = {
 export function ManagePaperPanel({
   paper,
   authors,
+  currentGrants,
+  availableGrants,
   statuses,
   availableAuthors,
 }: ManagePaperPanelProps) {
@@ -49,6 +61,7 @@ export function ManagePaperPanel({
   const [status, setStatus] = useState(paper.status);
   const [selectedAuthorId, setSelectedAuthorId] = useState<number | null>(null);
   const [authorOrder, setAuthorOrder] = useState<number | null>(null);
+  const [selectedGrantId, setSelectedGrantId] = useState<number | null>(null);
 
   const handlePaperUpdate = () => {
     startTransition(async () => {
@@ -120,6 +133,45 @@ export function ManagePaperPanel({
     });
   };
 
+  const handleLinkGrant = () => {
+    if (!selectedGrantId) {
+      toast.error("Select a grant to link.");
+      return;
+    }
+    startTransition(async () => {
+      const result = await linkGrantAction({
+        paperId: paper.id,
+        grantId: selectedGrantId,
+      });
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Grant linked successfully.");
+        setSelectedGrantId(null);
+        router.refresh();
+      }
+    });
+  };
+
+  const handleUnlinkGrant = (grantId: number) => {
+    if (!confirm("Are you sure you want to unlink this grant?")) {
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await unlinkGrantAction({
+        paperId: paper.id,
+        grantId: grantId,
+      });
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Grant unlinked.");
+        router.refresh();
+      }
+    });
+  };
+
   return (
     <div className="space-y-8">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -177,6 +229,66 @@ export function ManagePaperPanel({
               ))}
             </select>
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">Funding & Grants</h2>
+            <p className="text-sm text-slate-500">
+              Link funding sources to this research output.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-3">
+          {currentGrants.map((grant) => (
+            <div key={grant.grantId} className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-emerald-100 bg-emerald-50/50 px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-emerald-900">
+                  {grant.grantName}
+                </p>
+                <p className="text-xs text-emerald-600">
+                  Sponsor: {grant.sponsor}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleUnlinkGrant(grant.grantId)}
+                disabled={pending}
+                className="rounded-full border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-white disabled:opacity-40"
+              >
+                Unlink
+              </button>
+            </div>
+          ))}
+          {currentGrants.length === 0 && (
+            <p className="text-sm italic text-slate-400">
+              No grants linked yet.
+            </p>
+          )}
+        </div>
+
+        <div className="mt-4 flex gap-2">
+          <select
+            value={selectedGrantId ?? ""}
+            onChange={(e) => setSelectedGrantId(Number(e.target.value))}
+            className="flex-grow rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+          >
+            <option value="">Select a grant to link...</option>
+            {availableGrants.map((g) => (
+              <option key={g.id} value={g.id}>{g.label}</option>
+            ))}
+            </select>
+          <button
+            type="button"
+            onClick={handleLinkGrant}
+            disabled={pending || !selectedGrantId}
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-40"
+          >
+            Link
+          </button>
         </div>
       </section>
 
