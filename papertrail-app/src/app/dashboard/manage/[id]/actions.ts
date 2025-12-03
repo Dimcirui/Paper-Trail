@@ -197,7 +197,7 @@ export async function reorderAuthorAction(input: unknown) {
 export async function deletePaperAction(paperId: number) {
   try {
     const actorId = await resolveActorId();
-    await prisma.$executeRaw`CALL sp_delete_paper(${paperId}, ${actorId})`;
+    await prisma.$executeRaw`CALL sp_soft_delete_paper(${paperId}, ${actorId})`;
     return  { success: true };
   } catch (error) {
     console.error("Delete paper error:", error);
