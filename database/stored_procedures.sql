@@ -339,22 +339,22 @@ SET @papertrail_viewer_password = COALESCE(@papertrail_viewer_password, UUID());
 -- CREATE USER 'papertrail_contrib'@'%' IDENTIFIED BY @papertrail_contrib_password;
 -- CREATE USER 'papertrail_viewer'@'%' IDENTIFIED BY @papertrail_viewer_password;
 
-SET @sql = CONCAT('CREATE USER ''papertrail_admin''@''%'' IDENTIFIED BY ''', @papertrail_admin_password, '''');
+SET @sql = CONCAT('CREATE USER ''papertrail_admin''@''%'' IDENTIFIED WITH mysql_native_password BY ''', @papertrail_admin_password, '''');
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-SET @sql = CONCAT('CREATE USER ''papertrail_pi''@''%'' IDENTIFIED BY ''', @papertrail_pi_password, '''');
+SET @sql = CONCAT('CREATE USER ''papertrail_pi''@''%'' IDENTIFIED WITH mysql_native_password BY ''', @papertrail_pi_password, '''');
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-SET @sql = CONCAT('CREATE USER ''papertrail_contrib''@''%'' IDENTIFIED BY ''', @papertrail_contrib_password, '''');
+SET @sql = CONCAT('CREATE USER ''papertrail_contrib''@''%'' IDENTIFIED WITH mysql_native_password BY ''', @papertrail_contrib_password, '''');
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-SET @sql = CONCAT('CREATE USER ''papertrail_viewer''@''%'' IDENTIFIED BY ''', @papertrail_viewer_password, '''');
+SET @sql = CONCAT('CREATE USER ''papertrail_viewer''@''%'' IDENTIFIED WITH mysql_native_password BY ''', @papertrail_viewer_password, '''');
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
