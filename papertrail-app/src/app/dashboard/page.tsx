@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { canEditContent, getCurrentUserRole } from "@/lib/user";
 import { DashboardSearch, DashboardStatusFilter } from "./dashboard-search";
+import { PAPER_STATUSES, type PaperStatus } from "@/lib/papers";
+import type { Prisma } from "@prisma/client";
 
 type PaperListItem = {
   id: number;
@@ -10,12 +12,6 @@ type PaperListItem = {
   updatedAt: Date;
   venue?: { venueName: string } | null;
   primaryContact?: { userName: string; email?: string } | null;
-};
-
-type PaperWhereClause = {
-  isDeleted: boolean;
-  status?: string;
-  OR?: Array<{ title: { contains: string } } | { abstract: { contains: string } }>;
 };
 
 type DashboardHomeProps = {
@@ -54,15 +50,22 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
   const page = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
   const skip = (page - 1) * PAGE_SIZE;
 
-  const whereClause: PaperWhereClause = { 
+  const normalizedStatus: PaperStatus | undefined =
+    statusFilter && PAPER_STATUSES.includes(statusFilter as PaperStatus)
+      ? (statusFilter as PaperStatus)
+      : undefined;
+
+  const whereClause: Prisma.PaperWhereInput = {
     isDeleted: false,
-    ...(statusFilter ? { status: statusFilter } : {}),
-    ...(query ? {
-        OR: [
+    ...(normalizedStatus ? { status: normalizedStatus } : {}),
+    ...(query
+      ? {
+          OR: [
             { title: { contains: query } },
-            { abstract: { contains: query } }
-        ]
-    } : {})
+            { abstract: { contains: query } },
+          ],
+        }
+      : {}),
   };
 
   const [systemTotal, activeDrafts, filteredTotal, papers] = await Promise.all([
