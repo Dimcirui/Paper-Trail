@@ -27,7 +27,7 @@ PaperTrail is a research-publication management platform for professors, graduat
    ```bash
    docker compose up -d
    ```
-   The MySQL service maps port `3306` in the container to `3307` on the host so it doesn’t collide with any local MySQL instance, and Adminer is available at `http://localhost:8080` for quick inspections.
+   The MySQL service maps port `3306` in the container to `3306` on the host, and Adminer is available at `http://localhost:8080` for quick inspections.
 
 2. **Prepare the frontend environment**
    ```bash
@@ -35,7 +35,7 @@ PaperTrail is a research-publication management platform for professors, graduat
    cp .env.example .env.local
    npm install
    ```
-   - Edit `.env.local` (and `.env` if you rely on it elsewhere) and ensure `DATABASE_URL` points to `mysql://papertrail:papertrail@localhost:3307/papertrail`.
+   - Edit `.env.local` (and `.env` if you rely on it elsewhere) and ensure `DATABASE_URL` points to `mysql://papertrail:papertrail@localhost:3306/papertrail`.
    - Set `API_AUTH_TOKEN` (used by the `/api/papers` endpoints) and any `NEXT_PUBLIC_*` variables you need for client-side demos.
 
 3. **Prisma client + schema sync**
@@ -45,18 +45,15 @@ PaperTrail is a research-publication management platform for professors, graduat
    ```
    These commands regenerate the Prisma client and push the schema into the running Dockerized MySQL instance.
 
-4. **Load stored procedures, triggers, and roles**
+4. **Provision stored procedures and seed data**
    ```bash
-   cat ../database/stored_procedures.sql | docker compose exec -T db mysql -u root -proot
+   cat ../database/final_submission.sql | docker compose exec -T db mysql -u root -proot
    ```
-   This script provisions every stored procedure/trigger/event documented in `docs/database.md` and `docs/stored_procedures.md`. (If you prefer not to expose the password on the CLI, set `MYSQL_PWD=root` in the same shell and omit `-proot`.)
-
-5. **Seed the database with realistic data**
+   Everything—stored procedures, triggers, events, roles, and the real-world seed—is bundled in `database/final_submission.sql`. Running this single script restores the schema and demo data needed for grading. The script also generates the temporary passwords noted in the output so you can log in as any seeded user.
    ```bash
-   cat ../database/real_world_seed.sql | docker compose exec -T db mysql -u root -proot
-   mysql -h 127.0.0.1 -P 3307 -u root -proot -e "select userName, email from User limit 5" papertrail
+   mysql -h 127.0.0.1 -P 3306 -u root -proot -e "select userName, email from User limit 5" papertrail
    ```
-   The seed file resets the core tables and inserts the demo accounts. The final `mysql` command verifies the seed succeeded.
+   Repeat the quick query to confirm the seed completed successfully.
 
 6. **Run the Next.js app**
    ```bash
