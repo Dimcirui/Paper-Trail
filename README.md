@@ -85,17 +85,3 @@ PaperTrail is a research-publication management platform for professors, graduat
 | `npm run test` | Jest in-band tests |
 | `npm run test:coverage` | Jest with coverage report |
 | `npm run test:mutation` | Stryker mutation testing (report in `reports/mutation`) |
-
-## Recommendations
-
-1. **Authentication & authorization** – Tie NextAuth (or custom logic) to the `Role`/`User` tables and guard dashboard routes with middleware.
-2. **CRUD modules** – Build dashboard flows around the Prisma models (papers + revisions, authorships, grants, analysis dashboards).
-3. **Analytics & reporting** – Add API routes that aggregate papers by year/grant/venue and visualize them with Chart.js.
-4. **Collaboration polish** – Surface activity logs, notifications, and optimize UX for multi-role teams.
-
-## Collaboration Reminders
-
-- Keep Prisma schema + migrations committed so every team member shares the same structure.
-- Use feature folders inside `src/app` (e.g., `(dashboard)/papers`, `(dashboard)/analytics`) to co-locate server actions, loaders, and UI.
-- Prefer Prisma for server-side data access; avoid raw SQL unless you need a stored procedure or event.
-- Before submitting, run `npm run lint`, `npm run test:coverage`, `npm run test:mutation`, and hit `/api/health` to show the environment is configured.
