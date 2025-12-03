@@ -106,14 +106,14 @@ export default function LoginForm({ redirectTo = '/dashboard' }: LoginFormProps)
             Demo Accounts
           </p>
           <p className="text-[12px]">
-            Use any of the seeded usernames or emails below with password{' '}
-            <span className="font-semibold">pass</span>.
+            Use any of the emails below with password{' '}
+            <span className="font-semibold">pass</span>
           </p>
           <div className="grid gap-1 text-[11px]">
-            <p>• AdminUser — admin@papertrail.edu (Research Admin)</p>
-            <p>• Prof. Alice Smith — alice@papertrail.edu (Principal Investigator)</p>
-            <p>• Carol (PhD Student) — carol@papertrail.edu (Contributor)</p>
-            <p>• Frank Viewer — frank@guest.com (Viewer)</p>
+            <p>admin@papertrail.edu (Research Admin)</p>
+            <p>alice@papertrail.edu (Principal Investigator)</p>
+            <p>carol@papertrail.edu (Contributor)</p>
+            <p>frank@guest.com (Viewer)</p>
           </div>
         </div>
       </div>
