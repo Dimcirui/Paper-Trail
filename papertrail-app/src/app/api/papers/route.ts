@@ -188,3 +188,39 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  const auth = authorizeRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ error: auth.message }, { status: 401 });
+  }
+  
+  if (!hasWritePermission(auth.role)) {
+    return NextResponse.json(
+        { error: "Insufficient permissions." },
+        { status: 403 }
+    );
+  }
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json({ error: "Paper ID is required." }, { status: 400 });
+  }
+
+  try {
+    // Hardcoded actorId for now
+    const actorId = 1; 
+    
+    await prisma.$executeRaw`CALL sp_soft_delete_paper(${parseInt(id)}, ${actorId})`;
+
+    return NextResponse.json({ message: "Paper soft deleted successfully." }, { status: 200 });
+  } catch (error: unknown) {
+    console.error("Failed to delete paper", error);
+    return NextResponse.json(
+      { error: "Database error during soft delete." },
+      { status: 500 },
+    );
+  }
+}
