@@ -27,12 +27,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
-.env
-papertrail-app/.env
-papertrail-app/.env*.local
-
 # vercel
 .vercel
 papertrail-app/.vercel
