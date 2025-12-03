@@ -38,7 +38,7 @@ export default async function TrashPage() {
                         🗑️ Trash Can
                     </h1>
                     <p className="text-zinc-500 text-sm mt-1">
-                        Recover deleted papers. Restored papers will return to &apos;Draft&apos; status.
+                        Recover deleted papers. Restored papers will keep &apos;Withdrawn&apos; status.
                     </p>
                 </div>
                 {/* <Link 
