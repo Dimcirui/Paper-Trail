@@ -76,7 +76,7 @@ export default function LoginForm({ redirectTo = '/dashboard' }: LoginFormProps)
               onChange={(e) => setUsername(e.target.value)}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="e.g. PaperTrail Admin or admin@papertrail.local"
+              placeholder="e.g. AdminUser or admin@papertrail.edu"
             />
           </div>
 
@@ -101,16 +101,24 @@ export default function LoginForm({ redirectTo = '/dashboard' }: LoginFormProps)
           </button>
         </form>
 
-        <div className="rounded-lg bg-indigo-50 p-4 text-xs text-indigo-900">
-          <p className="font-semibold uppercase tracking-wide text-[11px] text-indigo-600 mb-2">
+        <div className="rounded-lg bg-indigo-50 p-4 text-xs text-indigo-900 space-y-2">
+          <p className="font-semibold uppercase tracking-wide text-[11px] text-indigo-600">
             Demo Accounts
           </p>
-          <p>Use any seeded username or email (password: <span className="font-semibold">pass</span>).</p>
-          <ul className="mt-2 space-y-1">
-            <li>• PaperTrail Admin — admin@papertrail.local</li>
-            <li>• Dr. Priya Natarajan — priya.natarajan@yale.edu</li>
-            <li>• Dr. Miguel Alvarez — miguel.alvarez@mit.edu</li>
-          </ul>
+          <p className="text-[12px]">
+            Use any of the seeded usernames or emails below with password{' '}
+            <span className="font-semibold">pass</span>. There are no accounts that end in{' '}
+            <span className="font-semibold">.local</span>.
+          </p>
+          <div className="grid gap-1 text-[11px]">
+            <p>• AdminUser — admin@papertrail.edu (Research Admin)</p>
+            <p>• Prof. Alice Smith — alice@papertrail.edu (Principal Investigator)</p>
+            <p>• Dr. Bob Jones — bob@papertrail.edu (Principal Investigator)</p>
+            <p>• Carol (PhD Student) — carol@papertrail.edu (Contributor)</p>
+            <p>• Dave (Postdoc) — dave@papertrail.edu (Contributor)</p>
+            <p>• Eve (External) — eve@partner.org (Contributor)</p>
+            <p>• Frank Viewer — frank@guest.com (Viewer)</p>
+          </div>
         </div>
       </div>
     </div>
