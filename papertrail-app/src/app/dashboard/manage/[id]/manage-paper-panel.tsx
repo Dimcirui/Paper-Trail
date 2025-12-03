@@ -10,6 +10,7 @@ import {
   reorderAuthorAction,
   linkGrantAction,
   unlinkGrantAction,
+  deletePaperAction,
 } from "./actions";
 
 type Author = {
@@ -172,6 +173,21 @@ export function ManagePaperPanel({
     });
   };
 
+  const handleDeletePaper = () => {
+    if (!confirm("Are you sure you want to DELETE this paper?")) return;
+
+    startTransition(async () => {
+      const result = await deletePaperAction(paper.id);
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Paper deleted.");
+        router.push("/dashboard");
+        router.refresh();
+      }
+    });
+  };
+
   return (
     <div className="space-y-8">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -184,14 +200,25 @@ export function ManagePaperPanel({
               Update fields shared with collaborators across the workflow.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handlePaperUpdate}
-            disabled={pending}
-            className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
-          >
-            {pending ? "Saving..." : "Save changes"}
-          </button>
+
+          <div>
+            <button
+              type="button"
+              onClick={handleDeletePaper}
+              disabled={pending}
+              className="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+            >
+              {pending ? "Deleting..." : "Delete"}
+            </button>
+            <button
+              type="button"
+              onClick={handlePaperUpdate}
+              disabled={pending}
+              className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+            >
+              {pending ? "Saving..." : "Save changes"}
+            </button>
+          </div>
         </div>
         <div className="mt-6 space-y-4">
           <div className="space-y-1">
