@@ -46,14 +46,18 @@ PaperTrail is a research-publication management platform for professors, graduat
    These commands regenerate the Prisma client and push the schema into the running Dockerized MySQL instance.
 
 4. **Provision stored procedures and seed data**
+   (Ensure you are in the papertrail-app directory)
    ```bash
    cat ../database/final_submission.sql | docker compose exec -T db mysql -u root -proot
    ```
    Everything—stored procedures, triggers, events, roles, and the real-world seed—is bundled in `database/final_submission.sql`. Running this single script restores the schema and demo data needed for grading. The script also generates the temporary passwords noted in the output so you can log in as any seeded user.
+   Verify the data(Optional):
    ```bash
+   # Option A: Using local MySQL client (requires MySQL in PATH)
    mysql -h 127.0.0.1 -P 3307 -u root -proot -e "select userName, email from User limit 5" papertrail
+   # Option B: Using Docker executable (No local install required)
+   docker compose exec -T db mysql -u root -proot -e "select userName, email from User limit 5" papertrail
    ```
-   Repeat the quick query to confirm the seed completed successfully.
 
 6. **Run the Next.js app**
    ```bash

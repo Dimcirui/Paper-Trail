@@ -84,6 +84,7 @@ const updateSchema = z.object({
   title: z.string().min(3).max(191).optional(),
   abstract: abstractSchema.optional(),
   status: z.string().optional(),
+  isDeleted: z.boolean().optional(),
 });
 
 const isPaperStatus = (value: unknown): value is PaperStatus =>
@@ -138,6 +139,10 @@ export async function PATCH(
       );
     }
     updateData.status = payload.data.status;
+  }
+
+  if (payload.data.isDeleted !== undefined) {
+      updateData.isDeleted = payload.data.isDeleted;
   }
 
   if (Object.keys(updateData).length === 0) {
