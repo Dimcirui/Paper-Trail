@@ -107,16 +107,11 @@ export default function LoginForm({ redirectTo = '/dashboard' }: LoginFormProps)
           </p>
           <p className="text-[12px]">
             Use any of the seeded usernames or emails below with password{' '}
-            <span className="font-semibold">pass</span>. There are no accounts that end in{' '}
-            <span className="font-semibold">.local</span>.
           </p>
           <div className="grid gap-1 text-[11px]">
             <p>• AdminUser — admin@papertrail.edu (Research Admin)</p>
             <p>• Prof. Alice Smith — alice@papertrail.edu (Principal Investigator)</p>
-            <p>• Dr. Bob Jones — bob@papertrail.edu (Principal Investigator)</p>
             <p>• Carol (PhD Student) — carol@papertrail.edu (Contributor)</p>
-            <p>• Dave (Postdoc) — dave@papertrail.edu (Contributor)</p>
-            <p>• Eve (External) — eve@partner.org (Contributor)</p>
             <p>• Frank Viewer — frank@guest.com (Viewer)</p>
           </div>
         </div>
