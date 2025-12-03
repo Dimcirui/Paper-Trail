@@ -1,10 +1,7 @@
-import { SignJWT, jwtVerify } from "jose";
+import { jwtVerify } from "jose";
 import { prisma } from "@/lib/prisma";
 import { POST } from "../route";
 import { NextRequest } from "next/server";
-import { mock } from "node:test";
-import { create } from "domain";
-
 process.env.JWT_SECRET = "test-secret-key";
 
 jest.mock("@/lib/prisma", () => ({
@@ -17,6 +14,13 @@ jest.mock("@/lib/prisma", () => ({
 
 const mockFindFirst = prisma.user.findFirst as jest.MockedFunction<typeof prisma.user.findFirst>;
 
+const mockBaseUser = {
+    affiliation: null,
+    orcid: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+};
+
 const mockAdminUser = {
     id: 1,
     userName: "adminUser",
@@ -24,6 +28,7 @@ const mockAdminUser = {
     password: "pass",
     roleId: 1,
     role: { roleName: "Research Admin" },
+    ...mockBaseUser,
 };
 
 const mockPIUser = {
@@ -33,6 +38,7 @@ const mockPIUser = {
     password: "pass",
     roleId: 2,
     role: { roleName: "Principal Investigator" },
+    ...mockBaseUser,
 };
 
 const createRequest = (

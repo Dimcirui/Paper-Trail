@@ -2,16 +2,8 @@ import Link from "next/link";
 import { ReactNode } from "react";
 import LogoutButton from "./components/LogoutButton";
 import LoginLink from "./components/LoginLink";
+import DashboardNav from "./components/DashboardNav";
 import { canEditContent, getAuthContext } from "@/lib/user";
-
-const navItems = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Analytics", href: "/dashboard/analytics" },
-];
-
-const manageItems = [
-  { label: "Create Paper", href: "/dashboard/manage/new" },
-];
 
 type DashboardLayoutProps = {
   children: ReactNode;
@@ -57,27 +49,7 @@ export default async function DashboardLayout({
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <nav className="flex flex-wrap gap-3 text-sm font-medium text-slate-600">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="rounded-full border border-transparent bg-slate-100 px-4 py-2 hover:border-indigo-500 hover:text-indigo-600"
-                >
-                  {item.label}
-                </Link>
-              ))}
-              {editable &&
-                manageItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-indigo-600 hover:border-indigo-500"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-            </nav>
+            <DashboardNav editable={editable} />
             <div className="flex items-center gap-2">
               {!isAuthenticated && <LoginLink />}
               {isAuthenticated && <LogoutButton showUserLabel={false} />}
