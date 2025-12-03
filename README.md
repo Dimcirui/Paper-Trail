@@ -11,83 +11,85 @@ PaperTrail is a research-publication management platform for professors, graduat
 
 ```
 .
-├── docker-compose.yml         # Containerized MySQL + Adminer
-├── papertrail-app/            # Next.js 14 application (frontend + API)
+├── docker-compose.yml         # Containerized MySQL + Adminer (db + UI)
+├── database/                  # SQL automation, stored procedures and seeds
+├── docs/                      # Schema + stored-procedure documentation
+├── papertrail-app/            # Next.js 14 app (frontend + API)
 │   ├── prisma/schema.prisma   # Relational model for PaperTrail
-│   ├── src/app/api            # Health check + sample paper routes
-│   └── src/app/page.tsx       # Landing page with team roadmap
+│   ├── src/app/api            # Health, papers, and auth routes
+│   └── src/app/page.tsx       # Landing page + roadmap
 └── README.md                  # Project overview + workflow
 ```
 
-## Quick start
+## Full-stack spin-up (grading checklist)
 
-1. **Start the database**
+1. **Launch containers**
    ```bash
-   docker compose up -d db       # boots MySQL 8 with papertrail database
-   docker compose up -d adminer  # optional UI on http://localhost:8080
+   docker compose up -d
    ```
+   The MySQL service maps port `3306` in the container to `3307` on the host (to avoid conflicts with any local MySQL), and Adminer is available at `http://localhost:8080` for quick inspections.
 
-2. **Configure env + install deps**
+2. **Prepare the frontend environment**
    ```bash
    cd papertrail-app
    cp .env.example .env.local
    npm install
    ```
-   Set `API_AUTH_TOKEN` in `.env.local` before running the API; requests must include `Authorization: Bearer <token>` and may optionally send `X-User-Role` to access privileged fields.
+   - Edit `.env.local` (and `.env` if you rely on it elsewhere) and ensure `DATABASE_URL` points to `mysql://papertrail:papertrail@localhost:3307/papertrail`.
+   - Set `API_AUTH_TOKEN` (used by the `/api/papers` endpoints) and any `NEXT_PUBLIC_*` variables you need for client-side demos.
 
-3. **Generate the Prisma client + apply schema**
+3. **Prisma client + schema sync**
    ```bash
    npm run prisma:generate
-   npm run db:push    # or `npm run db:migrate` once migrations exist
+   npm run db:push
    ```
+   These commands regenerate the Prisma client and push the schema into the running Dockerized MySQL instance.
 
-4. **Load stored procedures, triggers, and DB roles**
-   - **Preferred (works regardless of host client version)**
-     ```bash
-     cd ..
-     docker compose exec -T db sh -c 'mysql -uroot -proot' < database/stored_procedures.sql
-     ```
-   - **Host client alternative** (requires a MySQL CLI compatible with the container auth plugin):
-     ```bash
-     MYSQL_PWD=<password> mysql -h 127.0.0.1 -P 3306 -u root < database/stored_procedures.sql
-     ```
-   The script creates every stored procedure, trigger, scheduled event, and MySQL role documented in `docs/database.md` and `docs/stored_procedures.md`. It also generates random temporary passwords for the sample MySQL users (unless you set `@papertrail_admin_password`, etc. beforehand) and expires them so you can immediately rotate them.
+4. **Provision stored procedures and seed data**
+   ```bash
+   cat ../database/final_submission.sql | docker compose exec -T db mysql -u root -proot
+   ```
+   Everything—stored procedures, triggers, events, roles, and the real-world seed—is bundled in `database/final_submission.sql`. Running this single script restores the schema and demo data needed for grading. The script also generates the temporary passwords noted in the output so you can log in as any seeded user.
+   ```bash
+   mysql -h 127.0.0.1 -P 3307 -u root -proot -e "select userName, email from User limit 5" papertrail
+   ```
+   Repeat the quick query to confirm the seed completed successfully.
 
-5. **Run the app**
+6. **Run the Next.js app**
    ```bash
    npm run dev
    ```
-   - http://localhost:3000 shows the collaboration dashboard landing page.
-   - http://localhost:3000/api/health confirms that env vars are wired.
-   - http://localhost:3000/api/papers demonstrates how backend logic lives inside `/api`.
+   - Visit `http://localhost:3000` to see the landing page.
+   - `http://localhost:3000/api/health` confirms environment wiring.
+   - `http://localhost:3000/api/papers` hits the papers route through API middleware.
+   - **Login creds for demo accounts** (password for all: `pass`):
+     - AdminUser — admin@papertrail.edu
+     - Prof. Alice Smith — alice@papertrail.edu
+     - Dr. Bob Jones — bob@papertrail.edu
+     - Carol (PhD Student) — carol@papertrail.edu
+     - Dave (Postdoc) — dave@papertrail.edu
+     - Eve (External) — eve@partner.org
+     - Frank Viewer — frank@guest.com
 
-## Suggested implementation plan
+7. **Additional commands to verify grading-ready state**
+   ```bash
+   npm run lint
+   npm run test:coverage
+   npm run test:mutation
+   ```
+   Include the reports (especially the Stryker HTML output in `papertrail-app/reports/mutation`) when delivering the final submission.
 
-1. **Authentication & authorization** – Introduce NextAuth (or custom auth) that maps session roles to the `Role`/`User` tables. Guard dashboard routes using middleware and server components.
-2. **CRUD modules** – Build dashboard routes around the Prisma models:
-   - Papers + revisions (soft delete with `isDeleted`)
-   - Authorship management + ordering UI
-   - Grants, funding sources, and activity logs
-3. **Analytics & reporting** – Create API routes that aggregate using Prisma (papers per year, per grant, per venue). Visualize using Chart.js components in the dashboard.
-4. **Collaboration polish** – Add optimistic UI, notifications, and admin activity feeds using the `ActivityLog` table. Consider background jobs or scheduled API routes for reminders.
-
-## Helpful scripts
+## Helpful Scripts Reference
 
 | Command | Description |
 | --- | --- |
 | `npm run dev` | Next.js dev server |
-| `npm run build` / `start` | Production build + serve |
-| `npm run lint` | ESLint |
+| `npm run build` / `npm run start` | Production build + serve |
+| `npm run lint` | ESLint on the entire app |
 | `npm run prisma:generate` | Regenerate Prisma client after schema edits |
 | `npm run db:push` | Apply Prisma schema to the dev database |
 | `npm run db:migrate` | Create/apply migrations once tables have data |
-| `npm run db:studio` | Launch Prisma Studio for quick inspection |
-
-Additional SQL automation lives in `database/stored_procedures.sql`. See `docs/database.md` for schema/normalization details and `docs/stored_procedures.md` for a walkthrough of every stored procedure, trigger, event, and role.
-
-## Collaboration reminders
-
-- Keep Prisma schema + migrations in version control so the team shares the same structure.
-- Use feature folders inside `src/app` (e.g., `(dashboard)/papers`, `(dashboard)/analytics`) to co-locate UI, loaders, and actions.
-- Prefer Prisma for data access inside server actions/API routes; avoid ad-hoc SQL until necessary.
-- Before merging, run `npm run lint` and hit `http://localhost:3000/api/health` to ensure the environment is configured.
+| `npm run db:studio` | Launch Prisma Studio for a GUI view of the schema |
+| `npm run test` | Jest in-band tests |
+| `npm run test:coverage` | Jest with coverage report |
+| `npm run test:mutation` | Stryker mutation testing (report in `reports/mutation`) |
