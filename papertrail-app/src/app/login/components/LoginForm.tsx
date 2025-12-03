@@ -107,6 +107,7 @@ export default function LoginForm({ redirectTo = '/dashboard' }: LoginFormProps)
           </p>
           <p className="text-[12px]">
             Use any of the seeded usernames or emails below with password{' '}
+            <span className="font-semibold">pass</span>.
           </p>
           <div className="grid gap-1 text-[11px]">
             <p>• AdminUser — admin@papertrail.edu (Research Admin)</p>
