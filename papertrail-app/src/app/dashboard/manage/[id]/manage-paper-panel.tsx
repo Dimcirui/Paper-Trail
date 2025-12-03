@@ -183,7 +183,6 @@ export function ManagePaperPanel({
       } else {
         toast.success("Paper deleted.");
         router.push("/dashboard");
-        router.refresh();
       }
     });
   };
