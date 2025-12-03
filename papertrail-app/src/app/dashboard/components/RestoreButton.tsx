@@ -12,7 +12,7 @@ export default function RestoreButton({ id, token }: { id: number; token: string
 
         setIsRestoring(true);
         try {
-            const response = await fetch(`/api/papers`, {
+            const response = await fetch(`/api/papers/${id}`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
@@ -26,7 +26,9 @@ export default function RestoreButton({ id, token }: { id: number; token: string
             });
 
             if (!response.ok) {
-                alert("Failed to restore paper.");
+                const errorData = await response.json().catch(() => ({}));
+                console.error("Restore failed:", errorData);
+                alert(`Failed to restore paper: ${errorData.error || response.statusText}`);
                 return;
             }
 
