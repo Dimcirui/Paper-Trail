@@ -41,16 +41,16 @@ export default async function TrashPage() {
                         Recover deleted papers. Restored papers will return to &apos;Draft&apos; status.
                     </p>
                 </div>
-                <Link 
+                {/* <Link 
                     href="/dashboard/manage" 
                     className="px-4 py-2 text-sm font-medium text-zinc-600 bg-white border border-zinc-300 rounded-lg hover:bg-zinc-50"
                 >
                     Back to Manage
-                </Link>
+                </Link> */}
 
-                <div className="w-px h-6 bg-zinc-300 hidden md:block"></div>
+                {/* <div className="w-px h-6 bg-zinc-300 hidden md:block"></div>
                     
-                <LogoutButton />
+                <LogoutButton /> */}
             </div>
 
             {/* LIST */}
