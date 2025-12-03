@@ -19,7 +19,7 @@ export async function linkGrantAction(input: unknown) {
 
   try {
     const actorId = await resolveActorId();
-    await prisma.$executeRaw`CALL sp_link_grant_to_paper(${parsed.data.paperId}, ${parsed.data.grantId}, ${actorId})`;
+    await prisma.$executeRaw`CALL sp_add_grant_to_paper(${parsed.data.paperId}, ${parsed.data.grantId}, ${actorId})`;
 
     revalidatePath(`/dashboard/manage/${parsed.data.paperId}`);
     return { success: true };

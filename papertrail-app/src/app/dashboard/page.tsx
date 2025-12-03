@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { canEditContent, getCurrentUserRole } from "@/lib/user";
-import { DashboardSearch } from "./dashboard-search";
+import { DashboardSearch, DashboardStatusFilter } from "./dashboard-search";
 
 type PaperListItem = {
   id: number;
@@ -10,6 +10,12 @@ type PaperListItem = {
   updatedAt: Date;
   venue?: { venueName: string } | null;
   primaryContact?: { userName: string; email?: string } | null;
+};
+
+type PaperWhereClause = {
+  isDeleted: boolean;
+  status?: string;
+  OR?: Array<{ title: { contains: string } } | { abstract: { contains: string } }>;
 };
 
 type DashboardHomeProps = {
@@ -48,7 +54,7 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
   const page = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
   const skip = (page - 1) * PAGE_SIZE;
 
-  const whereClause: any = { 
+  const whereClause: PaperWhereClause = { 
     isDeleted: false,
     ...(statusFilter ? { status: statusFilter } : {}),
     ...(query ? {
@@ -147,7 +153,7 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
 
       <section className="space-y-4">
         <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-slate-900">
                 Unified paper feed
@@ -156,8 +162,11 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
                 Browse, open, or manage any manuscript from a single view.
               </p>
             </div>
+            <DashboardStatusFilter />
           </div>
-          <DashboardSearch />
+          <DashboardSearch
+            key={`search=${params.search ?? ""}`}
+          />
         </div>
 
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
