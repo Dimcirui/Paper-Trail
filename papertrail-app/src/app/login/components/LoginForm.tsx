@@ -110,10 +110,11 @@ export default function LoginForm({ redirectTo = '/dashboard' }: LoginFormProps)
             <span className="font-semibold">pass</span>
           </p>
           <div className="grid gap-1 text-[11px]">
-            <p>admin@papertrail.edu (Research Admin)</p>
-            <p>alice@papertrail.edu (Principal Investigator)</p>
-            <p>carol@papertrail.edu (Contributor)</p>
-            <p>frank@guest.com (Viewer)</p>
+            <p>admin@papertrail.local (Research Admin)</p>
+            <p>priya.natarajan@yale.edu (Principal Investigator)</p>
+            <p>lena.becker@tum.de (Contributor)</p>
+            <p>viewer@papertrail.local (Viewer)</p>
+            <p className="text-slate-500">Additional seeded users exist, but these cover each role.</p>
           </div>
         </div>
       </div>
