@@ -62,6 +62,14 @@ PaperTrail is a research-publication management platform for professors, graduat
    - Visit `http://localhost:3000` to see the landing page.
    - `http://localhost:3000/api/health` confirms environment wiring.
    - `http://localhost:3000/api/papers` hits the papers route through API middleware.
+   - **Login creds for demo accounts** (password for all: `pass`):
+     - AdminUser — admin@papertrail.edu
+     - Prof. Alice Smith — alice@papertrail.edu
+     - Dr. Bob Jones — bob@papertrail.edu
+     - Carol (PhD Student) — carol@papertrail.edu
+     - Dave (Postdoc) — dave@papertrail.edu
+     - Eve (External) — eve@partner.org
+     - Frank Viewer — frank@guest.com
 
 7. **Additional commands to verify grading-ready state**
    ```bash
