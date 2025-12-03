@@ -27,7 +27,7 @@ PaperTrail is a research-publication management platform for professors, graduat
    ```bash
    docker compose up -d
    ```
-   The MySQL service maps port `3306` in the container to `3306` on the host, and Adminer is available at `http://localhost:8080` for quick inspections.
+   The MySQL service maps port `3306` in the container to `3307` on the host (to avoid conflicts with any local MySQL), and Adminer is available at `http://localhost:8080` for quick inspections.
 
 2. **Prepare the frontend environment**
    ```bash
@@ -35,7 +35,7 @@ PaperTrail is a research-publication management platform for professors, graduat
    cp .env.example .env.local
    npm install
    ```
-   - Edit `.env.local` (and `.env` if you rely on it elsewhere) and ensure `DATABASE_URL` points to `mysql://papertrail:papertrail@localhost:3306/papertrail`.
+   - Edit `.env.local` (and `.env` if you rely on it elsewhere) and ensure `DATABASE_URL` points to `mysql://papertrail:papertrail@localhost:3307/papertrail`.
    - Set `API_AUTH_TOKEN` (used by the `/api/papers` endpoints) and any `NEXT_PUBLIC_*` variables you need for client-side demos.
 
 3. **Prisma client + schema sync**
@@ -51,7 +51,7 @@ PaperTrail is a research-publication management platform for professors, graduat
    ```
    Everything—stored procedures, triggers, events, roles, and the real-world seed—is bundled in `database/final_submission.sql`. Running this single script restores the schema and demo data needed for grading. The script also generates the temporary passwords noted in the output so you can log in as any seeded user.
    ```bash
-   mysql -h 127.0.0.1 -P 3306 -u root -proot -e "select userName, email from User limit 5" papertrail
+   mysql -h 127.0.0.1 -P 3307 -u root -proot -e "select userName, email from User limit 5" papertrail
    ```
    Repeat the quick query to confirm the seed completed successfully.
 
