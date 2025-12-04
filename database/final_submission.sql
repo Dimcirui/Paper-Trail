@@ -54,6 +54,7 @@ CREATE TABLE Authorship (
   id INT AUTO_INCREMENT PRIMARY KEY,
   authorOrder INT DEFAULT 1,
   contributionNotes TEXT,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
   paperId INT NOT NULL,
   userId INT NOT NULL,
   FOREIGN KEY (paperId) REFERENCES Paper(id) ON UPDATE CASCADE ON DELETE CASCADE,
@@ -236,6 +237,33 @@ BEGIN
   COMMIT;
 END $$
 
+DROP PROCEDURE IF EXISTS sp_hard_delete_paper $$
+CREATE PROCEDURE sp_hard_delete_paper(
+  IN p_paper_id INT,
+  IN p_actor_id INT
+)
+BEGIN
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    SET @allow_hard_delete = NULL;
+    ROLLBACK;
+    RESIGNAL;
+  END;
+
+  START TRANSACTION;
+  SET @allow_hard_delete = TRUE;
+
+  DELETE FROM ActivityLog WHERE paperId = p_paper_id;
+  DELETE FROM Revision WHERE paperId = p_paper_id;
+  DELETE FROM PaperGrant WHERE paperId = p_paper_id;
+  DELETE FROM PaperTopic WHERE paperId = p_paper_id;
+  DELETE FROM Authorship WHERE paperId = p_paper_id;
+  DELETE FROM Paper WHERE id = p_paper_id;
+
+  SET @allow_hard_delete = NULL;
+  COMMIT;
+END $$
+
 DROP PROCEDURE IF EXISTS sp_assign_author $$
 CREATE PROCEDURE sp_assign_author(
   IN p_paper_id INT,
@@ -387,8 +415,10 @@ CREATE TRIGGER trg_prevent_paper_delete
 BEFORE DELETE ON Paper
 FOR EACH ROW
 BEGIN
-  SIGNAL SQLSTATE '45000'
-    SET MESSAGE_TEXT = 'Papers use soft deletes. Call sp_soft_delete_paper instead.';
+  IF @allow_hard_delete IS NULL OR @allow_hard_delete = FALSE THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Papers use soft deletes. Call sp_soft_delete_paper instead.';
+  END IF;
 END $$
 
 DROP EVENT IF EXISTS evt_flag_overdue_grants $$
@@ -436,6 +466,7 @@ CREATE ROLE 'role_research_admin', 'role_principal_investigator', 'role_contribu
 GRANT EXECUTE ON PROCEDURE papertrail.sp_create_paper TO 'role_research_admin', 'role_principal_investigator';
 GRANT EXECUTE ON PROCEDURE papertrail.sp_update_paper_status TO 'role_research_admin', 'role_principal_investigator';
 GRANT EXECUTE ON PROCEDURE papertrail.sp_soft_delete_paper TO 'role_research_admin';
+GRANT EXECUTE ON PROCEDURE papertrail.sp_hard_delete_paper TO 'role_research_admin';
 GRANT EXECUTE ON PROCEDURE papertrail.sp_assign_author TO 'role_research_admin', 'role_principal_investigator';
 GRANT EXECUTE ON PROCEDURE papertrail.sp_record_revision TO 'role_research_admin', 'role_principal_investigator', 'role_contributor';
 GRANT EXECUTE ON PROCEDURE papertrail.sp_add_grant_to_paper TO 'role_research_admin';
