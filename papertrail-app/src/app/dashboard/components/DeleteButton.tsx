@@ -10,11 +10,11 @@ export default function DeleteButton( { id }: { id: number; token: string } ) {
     const { user } = useUser();
 
     const handleDelete = async () => {
-        if (!confirm("Are you sure you want to delete this paper?")) return;
+        if (!confirm("Are you sure you want to delete this paper? You can find it in the Trash Can.")) return;
 
         setIsDeleting(true);
         if (user?.role !== "admin") {
-            alert("You do not have permission to delete this paper.");
+            alert("You do not have permission to delete this paper. You can find it in the Trash Can.");
             setIsDeleting(false);
             return;
         }

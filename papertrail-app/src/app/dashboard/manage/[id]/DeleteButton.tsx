@@ -9,7 +9,7 @@ export default function DeletePaperButton({ paperId }: { paperId: number }) {
   const router = useRouter();
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to DELETE this paper?")) return;
+    if (!confirm("Are you sure you want to DELETE this paper? You can find it in the Trash Can.")) return;
 
     setIsDeleting(true);
     const result = await deletePaperAction(paperId);

@@ -174,7 +174,7 @@ export function ManagePaperPanel({
   };
 
   const handleDeletePaper = () => {
-    if (!confirm("Are you sure you want to DELETE this paper?")) return;
+    if (!confirm("Are you sure you want to DELETE this paper? You can find it in the Trash Can.")) return;
 
     startTransition(async () => {
       const result = await deletePaperAction(paper.id);

@@ -194,6 +194,7 @@ export async function reorderAuthorAction(input: unknown) {
   }
 }
 
+// Soft delete paper
 export async function deletePaperAction(paperId: number) {
   try {
     const actorId = await resolveActorId();
@@ -203,6 +204,21 @@ export async function deletePaperAction(paperId: number) {
     console.error("Delete paper error:", error);
     return {
       error: "Unable to delete paper. It may have already been deleted.",
+    };
+  }
+}
+
+// Permanently delete paper
+export async function purgePaperAction(paperId: number) {
+  try {
+    await prisma.paper.delete({
+      where: { id: paperId },
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Purge paper error:", error);
+    return {
+      error: "Unable to permanently delete paper.",
     };
   }
 }

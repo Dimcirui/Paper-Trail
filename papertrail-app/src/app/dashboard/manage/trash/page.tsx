@@ -1,6 +1,7 @@
-import Link from 'next/link';
+// import Link from 'next/link';
 import RestoreButton from '../../components/RestoreButton';
-import LogoutButton from '../../components/LogoutButton';
+// import LogoutButton from '../../components/LogoutButton';
+import PurgeButton from '../../components/PurgeButton';
 
 type Paper = {
     id: number;
@@ -72,6 +73,8 @@ export default async function TrashPage() {
                             </div>
                             <div className="flex items-center gap-4">
                                 <RestoreButton id={paper.id} token={authToken} />
+
+                                <PurgeButton id={paper.id} />
                             </div>
                         </div>
                     ))
