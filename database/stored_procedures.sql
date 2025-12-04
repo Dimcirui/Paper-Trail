@@ -260,14 +260,14 @@ BEGIN
   VALUES (NEW.paperId, NEW.authorId, 'REVISION_ADDED', CONCAT('Revision ', NEW.versionLabel, ' created.'));
 END $$
 
-DROP TRIGGER IF EXISTS trg_prevent_paper_delete $$
-CREATE TRIGGER trg_prevent_paper_delete
-BEFORE DELETE ON Paper
-FOR EACH ROW
-BEGIN
-  SIGNAL SQLSTATE '45000'
-    SET MESSAGE_TEXT = 'Papers use soft deletes. Call sp_soft_delete_paper instead.';
-END $$
+-- DROP TRIGGER IF EXISTS trg_prevent_paper_delete $$
+-- CREATE TRIGGER trg_prevent_paper_delete
+-- BEFORE DELETE ON Paper
+-- FOR EACH ROW
+-- BEGIN
+--   SIGNAL SQLSTATE '45000'
+--     SET MESSAGE_TEXT = 'Papers use soft deletes. Call sp_soft_delete_paper instead.';
+-- END $$
 
 DROP EVENT IF EXISTS evt_flag_overdue_grants $$
 CREATE EVENT evt_flag_overdue_grants
