@@ -56,7 +56,6 @@ async function testApi(role, expectedStatus, testName, payload = TEST_PAPER_PAYL
 // -----------------------------------------------------------
 
 async function runTests() {
-  // 确保 dev server 正在运行： npm run dev
   // Ensure the dev server is running: npm run dev
   
   // Test 1: Admin (WRITE_ROLES) should successfully create a paper
