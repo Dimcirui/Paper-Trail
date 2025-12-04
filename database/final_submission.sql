@@ -1,8 +1,130 @@
+-- Full schema dump for PaperTrail: DDL + stored procedures + seed data.
+
+DROP DATABASE IF EXISTS papertrail;
+CREATE DATABASE papertrail;
+USE papertrail;
+
+CREATE TABLE Role (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  roleName VARCHAR(255) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE User (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  userName VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  affiliation VARCHAR(255),
+  orcid VARCHAR(255),
+  roleId INT NOT NULL,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (roleId) REFERENCES Role(id) ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE INDEX idx_user_role ON User(roleId);
+
+CREATE TABLE Venue (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  venueName VARCHAR(255) NOT NULL UNIQUE,
+  type VARCHAR(255),
+  ranking VARCHAR(255)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE Paper (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  abstract TEXT,
+  status ENUM('Draft','Submitted','UnderReview','Accepted','Published','Rejected','Withdrawn') NOT NULL DEFAULT 'Draft',
+  submissionDate DATETIME,
+  publicationDate DATETIME,
+  pdfUrl VARCHAR(500),
+  isDeleted BOOLEAN NOT NULL DEFAULT FALSE,
+  primaryContactId INT NOT NULL,
+  venueId INT,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (primaryContactId) REFERENCES User(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+  FOREIGN KEY (venueId) REFERENCES Venue(id) ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE INDEX idx_paper_status ON Paper(status);
+CREATE INDEX idx_paper_primary_contact ON Paper(primaryContactId);
+CREATE INDEX idx_paper_venue ON Paper(venueId);
+
+CREATE TABLE Authorship (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  authorOrder INT DEFAULT 1,
+  contributionNotes TEXT,
+  paperId INT NOT NULL,
+  userId INT NOT NULL,
+  FOREIGN KEY (paperId) REFERENCES Paper(id) ON UPDATE CASCADE ON DELETE CASCADE,
+  FOREIGN KEY (userId) REFERENCES User(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+  UNIQUE KEY unique_authorship (paperId, userId),
+  INDEX idx_authorship_order (paperId, authorOrder)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE Topic (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  topicName VARCHAR(255) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE PaperTopic (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  paperId INT NOT NULL,
+  topicId INT NOT NULL,
+  FOREIGN KEY (paperId) REFERENCES Paper(id) ON UPDATE CASCADE ON DELETE CASCADE,
+  FOREIGN KEY (topicId) REFERENCES Topic(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+  UNIQUE KEY unique_paper_topic (paperId, topicId),
+  INDEX idx_paper_topic_topic (topicId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `Grant` (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  grantName VARCHAR(255) NOT NULL,
+  sponsor VARCHAR(255),
+  startDate DATETIME,
+  endDate DATETIME,
+  reportingRequirements TEXT,
+  UNIQUE KEY unique_grant (grantName, sponsor)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE PaperGrant (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  paperId INT NOT NULL,
+  grantId INT NOT NULL,
+  FOREIGN KEY (paperId) REFERENCES Paper(id) ON UPDATE CASCADE ON DELETE CASCADE,
+  FOREIGN KEY (grantId) REFERENCES `Grant`(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+  UNIQUE KEY unique_paper_grant (paperId, grantId),
+  INDEX idx_paper_grant_grant (grantId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE Revision (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  paperId INT NOT NULL,
+  versionLabel VARCHAR(255) NOT NULL,
+  notes TEXT,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  authorId INT,
+  FOREIGN KEY (paperId) REFERENCES Paper(id) ON UPDATE CASCADE ON DELETE CASCADE,
+  FOREIGN KEY (authorId) REFERENCES User(id) ON UPDATE CASCADE ON DELETE SET NULL,
+  INDEX idx_revision_paper (paperId),
+  INDEX idx_revision_author (authorId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE ActivityLog (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  paperId INT NOT NULL,
+  userId INT,
+  actionType VARCHAR(255) NOT NULL,
+  actionDetail TEXT,
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (paperId) REFERENCES Paper(id) ON UPDATE CASCADE ON DELETE CASCADE,
+  FOREIGN KEY (userId) REFERENCES User(id) ON UPDATE CASCADE ON DELETE SET NULL,
+  INDEX idx_activity_paper (paperId),
+  INDEX idx_activity_user (userId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Stored procedures, triggers, events, and permissions for PaperTrail
 -- Run with: mysql -u root -p < database/stored_procedures.sql
-
-CREATE DATABASE IF NOT EXISTS papertrail;
-USE papertrail;
 
 SET @OLD_SQL_NOTES = @@sql_notes;
 SET @@sql_notes = 0;
@@ -326,44 +448,10 @@ DROP USER IF EXISTS 'papertrail_pi'@'%';
 DROP USER IF EXISTS 'papertrail_contrib'@'%';
 DROP USER IF EXISTS 'papertrail_viewer'@'%';
 
-SET @papertrail_admin_password = COALESCE(@papertrail_admin_password, UUID());
-SET @papertrail_pi_password = COALESCE(@papertrail_pi_password, UUID());
-SET @papertrail_contrib_password = COALESCE(@papertrail_contrib_password, UUID());
-SET @papertrail_viewer_password = COALESCE(@papertrail_viewer_password, UUID());
-
--- MySQL 8.0 does not permit the direct use of user variables (@variable) as the value for IDENTIFIED BY in CREATE USER.
--- Therefore, we use prepared statements to dynamically construct and execute the CREATE USER commands.
-
--- CREATE USER 'papertrail_admin'@'%' IDENTIFIED BY @papertrail_admin_password;
--- CREATE USER 'papertrail_pi'@'%' IDENTIFIED BY @papertrail_pi_password;
--- CREATE USER 'papertrail_contrib'@'%' IDENTIFIED BY @papertrail_contrib_password;
--- CREATE USER 'papertrail_viewer'@'%' IDENTIFIED BY @papertrail_viewer_password;
-
-SET @sql = CONCAT('CREATE USER ''papertrail_admin''@''%'' IDENTIFIED WITH mysql_native_password BY ''', @papertrail_admin_password, '''');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @sql = CONCAT('CREATE USER ''papertrail_pi''@''%'' IDENTIFIED WITH mysql_native_password BY ''', @papertrail_pi_password, '''');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @sql = CONCAT('CREATE USER ''papertrail_contrib''@''%'' IDENTIFIED WITH mysql_native_password BY ''', @papertrail_contrib_password, '''');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @sql = CONCAT('CREATE USER ''papertrail_viewer''@''%'' IDENTIFIED WITH mysql_native_password BY ''', @papertrail_viewer_password, '''');
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-
-ALTER USER 'papertrail_admin'@'%' PASSWORD EXPIRE;
-ALTER USER 'papertrail_pi'@'%' PASSWORD EXPIRE;
-ALTER USER 'papertrail_contrib'@'%' PASSWORD EXPIRE;
-ALTER USER 'papertrail_viewer'@'%' PASSWORD EXPIRE;
+CREATE USER 'papertrail_admin'@'%' IDENTIFIED BY 'pass';
+CREATE USER 'papertrail_pi'@'%' IDENTIFIED BY 'pass';
+CREATE USER 'papertrail_contrib'@'%' IDENTIFIED BY 'pass';
+CREATE USER 'papertrail_viewer'@'%' IDENTIFIED BY 'pass';
 
 GRANT 'role_research_admin' TO 'papertrail_admin'@'%';
 GRANT 'role_principal_investigator' TO 'papertrail_pi'@'%';
@@ -372,13 +460,13 @@ GRANT 'role_viewer' TO 'papertrail_viewer'@'%';
 
 SET DEFAULT ROLE ALL TO 'papertrail_admin'@'%', 'papertrail_pi'@'%', 'papertrail_contrib'@'%', 'papertrail_viewer'@'%';
 
-SELECT 'papertrail_admin' AS user, @papertrail_admin_password AS temporary_password
+SELECT 'papertrail_admin' AS user, 'pass' AS temporary_password
 UNION ALL
-SELECT 'papertrail_pi', @papertrail_pi_password
+SELECT 'papertrail_pi', 'pass'
 UNION ALL
-SELECT 'papertrail_contrib', @papertrail_contrib_password
+SELECT 'papertrail_contrib', 'pass'
 UNION ALL
-SELECT 'papertrail_viewer', @papertrail_viewer_password;
+SELECT 'papertrail_viewer', 'pass';
 
 SET @@sql_notes = @OLD_SQL_NOTES;
 USE papertrail;
@@ -404,7 +492,8 @@ INSERT INTO Role (id, roleName) VALUES
   (2, 'Principal Investigator'),
   (3, 'Contributor'),
   (4, 'Viewer')
-ON DUPLICATE KEY UPDATE roleName = VALUES(roleName);
+AS r
+ON DUPLICATE KEY UPDATE roleName = r.roleName;
 
 INSERT INTO Venue (id, venueName, type, ranking) VALUES
   (1, 'Nature Machine Intelligence', 'Journal', 'Q1'),
@@ -417,7 +506,8 @@ INSERT INTO Venue (id, venueName, type, ranking) VALUES
   (8, 'USENIX NSDI', 'Conference', 'A*'),
   (9, 'KDD (Knowledge Discovery and Data Mining)', 'Conference', 'A*'),
   (10, 'Nature Climate Change', 'Journal', 'Q1')
-ON DUPLICATE KEY UPDATE venueName = VALUES(venueName), type = VALUES(type), ranking = VALUES(ranking);
+AS v
+ON DUPLICATE KEY UPDATE venueName = v.venueName, type = v.type, ranking = v.ranking;
 
 INSERT INTO Topic (id, topicName) VALUES
   (1, 'Climate Modeling'),
@@ -430,7 +520,8 @@ INSERT INTO Topic (id, topicName) VALUES
   (8, 'Autonomous Vehicles'),
   (9, 'Sustainable Energy Systems'),
   (10, 'Human-AI Collaboration')
-ON DUPLICATE KEY UPDATE topicName = VALUES(topicName);
+AS t
+ON DUPLICATE KEY UPDATE topicName = t.topicName;
 
 INSERT INTO `Grant` (id, grantName, sponsor, startDate, endDate, reportingRequirements) VALUES
   (1, 'NSF CNS-23190 SecureEdge', 'National Science Foundation', '2023-01-01', '2026-12-31', 'Annual research and financial report'),
@@ -439,7 +530,8 @@ INSERT INTO `Grant` (id, grantName, sponsor, startDate, endDate, reportingRequir
   (4, 'DOE Climate Futures Initiative', 'Department of Energy', '2021-07-01', '2024-06-30', 'Annual impact statement'),
   (5, 'Wellcome Trust Digital Health Frontier', 'Wellcome Trust', '2022-02-01', '2025-01-31', 'Annual ethics statement'),
   (6, 'Toyota Research Embodied AI', 'Toyota Research Institute', '2023-06-01', '2026-05-31', 'Quarterly progress demos')
-ON DUPLICATE KEY UPDATE grantName = VALUES(grantName), sponsor = VALUES(sponsor);
+AS g
+ON DUPLICATE KEY UPDATE grantName = g.grantName, sponsor = g.sponsor;
 
 -- Staff roster (PI ids 200-231, contributors 300-349, admin 100, viewer 400)
 INSERT INTO User (id, userName, email, password, roleId, affiliation, orcid, createdAt, updatedAt) VALUES
@@ -510,7 +602,8 @@ INSERT INTO User (id, userName, email, password, roleId, affiliation, orcid, cre
   (338, 'Lucas Barrett', 'lucas.barrett@ox.ac.uk', 'pass', 3, 'Oxford Big Data Institute', NULL, NOW(), NOW()),
   (339, 'Mira Schultz', 'mira.schultz@cmu.edu', 'pass', 3, 'CMU Robotics Institute', NULL, NOW(), NOW()),
   (340, 'Aditya Menon', 'aditya.menon@iitd.ac.in', 'pass', 3, 'IIT Delhi Sustainable Tech Lab', NULL, NOW(), NOW())
-ON DUPLICATE KEY UPDATE userName = VALUES(userName), email = VALUES(email), affiliation = VALUES(affiliation), updatedAt = VALUES(updatedAt);
+AS u
+ON DUPLICATE KEY UPDATE userName = u.userName, email = u.email, affiliation = u.affiliation, updatedAt = u.updatedAt;
 
 -- Automated high-volume paper generation (150 records + relationships)
 DELIMITER $$

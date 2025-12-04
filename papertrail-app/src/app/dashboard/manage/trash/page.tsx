@@ -4,55 +4,44 @@ import RestoreButton from '../../components/RestoreButton';
 import PurgeButton from '../../components/PurgeButton';
 
 type Paper = {
-    id: number;
-    title: string;
-    status: string;
-    updatedAt: string;
-    venue?: { venueName: string };
-    primaryContact?: { userName: string };
+  id: number;
+  title: string;
+  status: string;
+  updatedAt: string;
+  venue?: { venueName: string };
+  primaryContact?: { userName: string };
 };
 
 export default async function TrashPage() {
-    const authToken = process.env.API_AUTH_TOKEN || '';
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  const authToken = process.env.API_AUTH_TOKEN || "";
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-    const response = await fetch(`${apiBaseUrl}/api/papers?deleted=true`, {
-        cache: 'no-store',
-        headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'x-user-role': 'admin'
-        }
-    });
+  const response = await fetch(`${apiBaseUrl}/api/papers?deleted=true`, {
+    cache: "no-store",
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      "x-user-role": "admin",
+    },
+  });
 
-    let papers: Paper[] = [];
-    if (response.ok) {
-        const data = await response.json();
-        papers = data.papers || [];
-    }
+  let papers: Paper[] = [];
+  if (response.ok) {
+    const data = await response.json();
+    papers = data.papers || [];
+  }
 
-    return (
-        <div className="min-h-screen bg-zinc-50 p-8 font-sans">
-            {/* HEADER */}
-            <div className="max-w-6xl mx-auto mb-8 flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold text-zinc-900 flex items-center gap-2">
-                        🗑️ Trash Can
-                    </h1>
-                    <p className="text-zinc-500 text-sm mt-1">
-                        Recover deleted papers. Restored papers will keep &apos;Withdrawn&apos; status.
-                    </p>
-                </div>
-                {/* <Link 
-                    href="/dashboard/manage" 
-                    className="px-4 py-2 text-sm font-medium text-zinc-600 bg-white border border-zinc-300 rounded-lg hover:bg-zinc-50"
-                >
-                    Back to Manage
-                </Link> */}
-
-                {/* <div className="w-px h-6 bg-zinc-300 hidden md:block"></div>
-                    
-                <LogoutButton /> */}
-            </div>
+  return (
+    <div className="min-h-screen bg-zinc-50 p-8 font-sans">
+      <div className="max-w-6xl mx-auto mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-zinc-900 flex items-center gap-2">
+            🗑️ Trash Can
+          </h1>
+          <p className="text-zinc-500 text-sm mt-1">
+            Recover deleted papers. Restored papers will keep “Withdrawn” status.
+          </p>
+        </div>
+      </div>
 
             {/* LIST */}
             <div className="max-w-6xl mx-auto grid gap-4">
@@ -80,6 +69,9 @@ export default async function TrashPage() {
                     ))
                 )}
             </div>
-        </div>
-    );
+          ))
+        )}
+      </div>
+    </div>
+  );
 }
