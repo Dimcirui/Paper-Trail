@@ -112,3 +112,43 @@ All commands assume the repo lives in its root directory (`/path/to/5200_final_p
 | `npm run test` | Jest in-band tests |
 | `npm run test:coverage` | Jest with coverage report |
 | `npm run test:mutation` | Stryker mutation testing (report in `reports/mutation`) |
+
+## CRUD Demonstration & Modular Flow
+
+The UI + API together execute the full CRUD spectrum for PaperTrail’s research-domain data:
+1. **Create** – The dashboard's **Create Paper** modal posts to `/api/papers`, which calls `sp_create_paper` (via Prisma) and inserts supporting `Authorship`, `PaperTopic`, and `ActivityLog` entries for the chosen PI/contributor. The same pattern is reused for recording revisions and attaching grants.
+2. **Read** – The table/list blocks on `/dashboard` and the paper detail drawer read `Paper`, `Authorship`, `PaperTopic`, `Revision`, and `ActivityLog` rows through `/api/papers`, plus related lookup tables (`Venue`, `Role`, etc.). Filters/search hit the same API and render polished status chips or stubbed analytics cards.
+3. **Update** – Status dropdowns, inline edit forms, and the Instrumented APIs call `sp_update_paper_status`, `sp_assign_author`, and Prisma mutation routes to update `Paper.status`, `Authorship` positions, `Revision` notes, and more; each request re-reads the latest data so UI reflects the mutation immediately.
+4. **Delete** – The Delete/Archive button invokes `sp_soft_delete_paper` so we never physically drop `Paper` rows; `isDeleted` toggles while `ActivityLog` records the soft-delete action. Other entities (e.g., `Authorship`, `PaperTopic`) are cleaned up via cascading foreign keys or dedicated API flows when a paper is purged. Administrators can optionally run `sp_hard_delete_paper` through the dashboard (hard delete button/endpoint) to fully purge a paper and all dependent rows when needed.
+
+Every UI action that touches the database is routed through reusable handler functions (`createPaper`, `updateStatus`, `addRevision`, etc.) and stored procedures/triggers that encapsulate business logic, ensuring the front end only calls high-level abstractions rather than mixing SQL text in the components.
+
+## Error Handling & Safety Nets
+
+- **API routes** validate arguments and return the correct HTTP status (400 for missing fields, 401 when credentials fail, 403/404 when a resource is not accessible, 500 for unexpected errors). Each try/catch block logs the caught error before sending a response, so the UI can show informative toasts and the console includes enough context for debugging.
+- **Stored procedures** use `START TRANSACTION` + `EXIT HANDLER FOR SQLEXCEPTION` so any failure rolls back and surfaces via the API error flow; `sp_create_paper`, `sp_assign_author`, and `sp_add_grant_to_paper` all log to `ActivityLog` on success so you can trace every mutation.
+- **Triggers/events** capture odder cases: `trg_revision_activity` logs revisions, `trg_prevent_paper_delete` enforces soft deletes, `evt_flag_overdue_grants` and `evt_log_stale_drafts` keep reporting items fresh. These DB-side protections ensure even direct SQL clients honor business rules.
+
+## Verification (Dump Integrity)
+
+Before submitting, run the dump on a clean environment and confirm every object is created:
+
+```bash
+docker compose down --volumes
+docker compose up -d
+cat database/final_submission.sql | docker compose exec -T db mysql -u root -proot
+docker compose exec -T db mysql -u root -proot -e "SHOW TABLES" papertrail
+```
+
+The script re-creates the schema, indexes, constraints, stored procedures, triggers, events, roles, demo users (`admin@papertrail.local`, `priya.natarajan@yale.edu`, etc.), and the 150-paper seed, so the command output should list all tables and no errors appear. Paste the logged output in the final write-up or commit notes to prove the dump runs cleanly.
+
+## Rubric Alignment Summary
+
+| Learning Outcome | Evidence |
+| --- | --- |
+| **Complex schema (3NF + ≥9 tables)** | `database/final_submission.sql` creates 11 tables plus join tables (`Authorship`, `PaperTopic`, `PaperGrant`); every table uses narrow keys, lookup tables, and no redundant data. |
+| **PKs/FKs + ON UPDATE/ON DELETE** | All tables declare primary keys, and each foreign key in the dump specifies `ON UPDATE`/`ON DELETE` actions (CASCADE/RESTRICT/SET NULL) to keep referential integrity. |
+| **Field constraints** | Columns declare `NOT NULL`, defaults, `ENUM` values, `UNIQUE` keys, and indexes (e.g., `User.email`, `Role.roleName`, `Paper.status`). |
+| **Programming objects** | The dump contains stored procedures (`sp_create_paper`, `sp_assign_author`, etc.), triggers (`trg_revision_activity`, `trg_prevent_paper_delete`), events (`evt_flag_overdue_grants`, `evt_log_stale_drafts`), and roles. |
+| **Client completeness (CRUD/UI)** | Dashboard forms + API routes cover Create/Read/Update/Delete; stored/SQL objects ensure consistent results; README’s CRUD section documents the end-to-end flows. |
+| **Modularity & error handling** | Server handlers delegate to reusable helpers and stored procedures; each route validates input, catches database errors, and logs details; SQL procedures wrap mutations in transactions with `EXIT HANDLER` blocks. |
