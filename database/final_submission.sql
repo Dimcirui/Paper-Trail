@@ -492,7 +492,8 @@ INSERT INTO Role (id, roleName) VALUES
   (2, 'Principal Investigator'),
   (3, 'Contributor'),
   (4, 'Viewer')
-ON DUPLICATE KEY UPDATE roleName = VALUES(roleName);
+AS r
+ON DUPLICATE KEY UPDATE roleName = r.roleName;
 
 INSERT INTO Venue (id, venueName, type, ranking) VALUES
   (1, 'Nature Machine Intelligence', 'Journal', 'Q1'),
@@ -505,7 +506,8 @@ INSERT INTO Venue (id, venueName, type, ranking) VALUES
   (8, 'USENIX NSDI', 'Conference', 'A*'),
   (9, 'KDD (Knowledge Discovery and Data Mining)', 'Conference', 'A*'),
   (10, 'Nature Climate Change', 'Journal', 'Q1')
-ON DUPLICATE KEY UPDATE venueName = VALUES(venueName), type = VALUES(type), ranking = VALUES(ranking);
+AS v
+ON DUPLICATE KEY UPDATE venueName = v.venueName, type = v.type, ranking = v.ranking;
 
 INSERT INTO Topic (id, topicName) VALUES
   (1, 'Climate Modeling'),
@@ -518,7 +520,8 @@ INSERT INTO Topic (id, topicName) VALUES
   (8, 'Autonomous Vehicles'),
   (9, 'Sustainable Energy Systems'),
   (10, 'Human-AI Collaboration')
-ON DUPLICATE KEY UPDATE topicName = VALUES(topicName);
+AS t
+ON DUPLICATE KEY UPDATE topicName = t.topicName;
 
 INSERT INTO `Grant` (id, grantName, sponsor, startDate, endDate, reportingRequirements) VALUES
   (1, 'NSF CNS-23190 SecureEdge', 'National Science Foundation', '2023-01-01', '2026-12-31', 'Annual research and financial report'),
@@ -527,7 +530,8 @@ INSERT INTO `Grant` (id, grantName, sponsor, startDate, endDate, reportingRequir
   (4, 'DOE Climate Futures Initiative', 'Department of Energy', '2021-07-01', '2024-06-30', 'Annual impact statement'),
   (5, 'Wellcome Trust Digital Health Frontier', 'Wellcome Trust', '2022-02-01', '2025-01-31', 'Annual ethics statement'),
   (6, 'Toyota Research Embodied AI', 'Toyota Research Institute', '2023-06-01', '2026-05-31', 'Quarterly progress demos')
-ON DUPLICATE KEY UPDATE grantName = VALUES(grantName), sponsor = VALUES(sponsor);
+AS g
+ON DUPLICATE KEY UPDATE grantName = g.grantName, sponsor = g.sponsor;
 
 -- Staff roster (PI ids 200-231, contributors 300-349, admin 100, viewer 400)
 INSERT INTO User (id, userName, email, password, roleId, affiliation, orcid, createdAt, updatedAt) VALUES
@@ -598,7 +602,8 @@ INSERT INTO User (id, userName, email, password, roleId, affiliation, orcid, cre
   (338, 'Lucas Barrett', 'lucas.barrett@ox.ac.uk', 'pass', 3, 'Oxford Big Data Institute', NULL, NOW(), NOW()),
   (339, 'Mira Schultz', 'mira.schultz@cmu.edu', 'pass', 3, 'CMU Robotics Institute', NULL, NOW(), NOW()),
   (340, 'Aditya Menon', 'aditya.menon@iitd.ac.in', 'pass', 3, 'IIT Delhi Sustainable Tech Lab', NULL, NOW(), NOW())
-ON DUPLICATE KEY UPDATE userName = VALUES(userName), email = VALUES(email), affiliation = VALUES(affiliation), updatedAt = VALUES(updatedAt);
+AS u
+ON DUPLICATE KEY UPDATE userName = u.userName, email = u.email, affiliation = u.affiliation, updatedAt = u.updatedAt;
 
 -- Automated high-volume paper generation (150 records + relationships)
 DELIMITER $$
