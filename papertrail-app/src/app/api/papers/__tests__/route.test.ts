@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { GET, POST } from "../route";
+import { GET, POST, DELETE } from "../route";
 import { prisma } from "@/lib/prisma";
 import {
   PrismaClientKnownRequestError,
@@ -31,6 +31,7 @@ jest.mock("@/lib/prisma", () => ({
     venue: {
       count: jest.fn(),
     },
+    $executeRaw: jest.fn(),
   },
 }));
 
@@ -42,6 +43,9 @@ const mockUserCount = prisma.user
   .count as jest.MockedFunction<typeof prisma.user.count>;
 const mockVenueCount = prisma.venue
   .count as jest.MockedFunction<typeof prisma.venue.count>;
+const mockExecuteRaw = prisma.$executeRaw as jest.MockedFunction<
+  typeof prisma.$executeRaw
+>;
 
 describe("/api/papers route handlers", () => {
   let consoleErrorSpy: jest.SpyInstance;
@@ -150,14 +154,60 @@ describe("/api/papers route handlers", () => {
 
       expect(response.status).toBe(500);
       expect(payload.error).toMatch(/Database not ready/i);
-       expect(consoleErrorSpy).toHaveBeenCalledWith(
-         "Failed to fetch papers",
-         expect.any(Error),
-       );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Failed to fetch papers",
+        expect.any(Error),
+      );
     });
   });
 
-  describe("POST", () => {
+  it("rejects deleted listings for viewers", async () => {
+    mockFindMany.mockClear();
+    const request = createRequest("http://localhost/api/papers?deleted=true");
+    const response = await GET(request);
+    const payload = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(payload.error).toMatch(/permission to view deleted/i);
+    expect(mockFindMany).not.toHaveBeenCalled();
+  });
+
+  it("allows admins to fetch deleted papers", async () => {
+    mockFindMany.mockClear();
+    mockFindMany.mockResolvedValue([]);
+    const request = createRequest(
+      "http://localhost/api/papers?deleted=true",
+      undefined,
+      "admin",
+    );
+    const response = await GET(request);
+
+    expect(response.status).toBe(200);
+    const whereClause = mockFindMany.mock.calls.pop()![0].where;
+    expect(whereClause).toMatchObject({ isDeleted: true });
+  });
+
+  it("honors status filters and search terms", async () => {
+    mockFindMany.mockClear();
+    mockFindMany.mockResolvedValue([]);
+    const request = createRequest(
+      "http://localhost/api/papers?status=Draft&search=climate",
+      undefined,
+      "admin",
+    );
+
+    await GET(request);
+
+    const whereClause = mockFindMany.mock.calls.pop()![0].where;
+    expect(whereClause.status).toBe("Draft");
+    expect(whereClause.OR).toEqual([
+      { title: { contains: "climate" } },
+      { abstract: { contains: "climate" } },
+    ]);
+  });
+  
+
+describe("POST", () => {
     it("rejects missing authorization header", async () => {
       const request = new NextRequest("http://localhost/api/papers", {
         method: "POST",
@@ -492,6 +542,58 @@ describe("/api/papers route handlers", () => {
         "Failed to create paper",
         expect.any(Error),
       );
+    });
+  });
+  describe("DELETE", () => {
+    it("calls soft delete when no hard parameter is provided", async () => {
+      mockExecuteRaw.mockResolvedValue(undefined);
+      const request = createRequest(
+        "http://localhost/api/papers?id=12",
+        { method: "DELETE" },
+        "admin",
+      );
+
+      const response = await DELETE(request);
+      const payload = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(payload.message).toMatch(/soft deleted/i);
+      expect(mockExecuteRaw).toHaveBeenCalled();
+      const template = mockExecuteRaw.mock.calls[0][0];
+      expect(template[0]).toContain("sp_soft_delete_paper");
+    });
+
+    it("calls hard delete when hard=true and caller is admin", async () => {
+      mockExecuteRaw.mockResolvedValue(undefined);
+      const request = createRequest(
+        "http://localhost/api/papers?id=13&hard=true",
+        { method: "DELETE" },
+        "admin",
+      );
+
+      const response = await DELETE(request);
+      const payload = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(payload.message).toMatch(/hard deleted/i);
+      expect(mockExecuteRaw).toHaveBeenCalled();
+      const template = mockExecuteRaw.mock.calls[0][0];
+      expect(template[0]).toContain("sp_hard_delete_paper");
+    });
+
+    it("rejects hard delete for non-admin roles", async () => {
+      const request = createRequest(
+        "http://localhost/api/papers?id=13&hard=true",
+        { method: "DELETE" },
+        "principal_investigator",
+      );
+
+      const response = await DELETE(request);
+      const payload = await response.json();
+
+      expect(response.status).toBe(403);
+      expect(payload.error).toMatch(/hard deletes/i);
+      expect(mockExecuteRaw).not.toHaveBeenCalled();
     });
   });
 });

@@ -165,17 +165,19 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
                 Browse, open, or manage any manuscript from a single view.
               </p>
             </div>
-            <DashboardStatusFilter />
-            {editable && (
-                    <Link 
-                        href="/dashboard/manage/trash"
-                        className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:border-red-200 hover:bg-red-50 hover:text-red-600 transition-colors"
-                        title="Trash Can / Recover Deleted Papers"
-                    >
-                        <span>🗑️</span>
-                        <span className="hidden sm:inline">Trash</span>
-                    </Link>
-                )}
+            <div className="flex items-start gap-3">
+              <DashboardStatusFilter />
+              {editable && (
+                <Link
+                  href="/dashboard/manage/trash"
+                  className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:border-red-200 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  title="Trash Can / Recover Deleted Papers"
+                >
+                  <span>🗑️</span>
+                  <span className="hidden sm:inline">Trash</span>
+                </Link>
+              )}
+            </div>
           </div>
           <DashboardSearch
             key={`search=${params.search ?? ""}`}

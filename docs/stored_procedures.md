@@ -17,6 +17,7 @@ The command above streams the SQL into the containerized MySQL instance. Swap cr
 | `sp_create_paper` | Inserts a new paper inside an explicit transaction, applies defaults, and logs a `PAPER_CREATED` activity entry. Returns the created row so the API can confirm values. |
 | `sp_update_paper_status` | Changes a paper’s status, updates timestamps, and records an audit entry inside the same transaction. |
 | `sp_soft_delete_paper` | Implements “Delete” by toggling `isDeleted`, forcing the status to `Withdrawn`, and logging the action atomically. |
+| `sp_hard_delete_paper` | Removes a paper and all dependent records (authorships, topics, grants, revisions, activity logs) inside a single transaction; it temporarily enables the delete trigger so we can bypass the soft delete guard when admin tooling needs a full purge. |
 | `sp_assign_author` | Upserts an authorship link, derives the next author order (if one isn’t provided) without relying on triggers, and logs the change. |
 | `sp_record_revision` | Adds entries to the `Revision` table (the trigger below mirrors entries into `ActivityLog`). |
 | `sp_add_grant_to_paper` | Upserts a `PaperGrant` row and writes an audit message. |
@@ -28,7 +29,7 @@ These routines centralize all CRUD logic inside the database, which satisfies th
 ## Triggers
 
 - `trg_revision_activity` – After every revision insert, copies the detail into `ActivityLog` with the `REVISION_ADDED` action. Demonstrates automatic logging independent of the application.
-- `trg_prevent_paper_delete` – Throws an error if anyone attempts a hard `DELETE` against `Paper`, enforcing soft deletes.
+- `trg_prevent_paper_delete` – Throws an error if anyone attempts a hard `DELETE` against `Paper`, enforcing soft deletes unless `sp_hard_delete_paper` temporarily toggles the guard variable.
 
 ## Scheduled events
 

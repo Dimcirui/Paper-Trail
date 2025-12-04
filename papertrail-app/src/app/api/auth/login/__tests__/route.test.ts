@@ -178,6 +178,85 @@ describe("/api/auth/login POST handler", () => {
         expect(payload.user.id).toBe(5);
     });
 
+    it("returns external role names plus BigInt IDs when provided", async () => {
+        const mockViewerUser = {
+            ...mockBaseUser,
+            id: BigInt(7),
+            userName: "guestUser",
+            email: "guest@example.com",
+            password: "pass",
+            roleId: 3,
+            role: { roleName: "External Partner" },
+        };
+        mockFindFirst.mockResolvedValue(mockViewerUser);
+
+        const request = createRequest({ username: "guestUser", password: "pass" });
+        const response = await POST(request);
+        const payload = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(payload.user.role).toBe("external_partner");
+        expect(payload.user.id).toBe(7);
+    });
+
+    it("defaults to viewer role when no known roleName exists", async () => {
+        const fallbackUser = {
+            ...mockBaseUser,
+            id: 9,
+            userName: "unknownRoleUser",
+            email: "unknown@example.com",
+            password: "pass",
+            roleId: 4,
+            role: { roleName: "" },
+        };
+        mockFindFirst.mockResolvedValue(fallbackUser);
+
+        const request = createRequest({ username: "unknownRoleUser", password: "pass" });
+        const response = await POST(request);
+        const payload = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(payload.user.role).toBe("viewer");
+        expect(payload.user.id).toBe(9);
+    });
+
+    it("requires JWT_SECRET and surfaces internal error if missing", async () => {
+        const originalSecret = process.env.JWT_SECRET;
+        delete process.env.JWT_SECRET;
+        mockFindFirst.mockResolvedValue(mockAdminUser);
+
+        try {
+            const request = createRequest({ username: "adminUser", password: "pass" });
+            const response = await POST(request);
+            const payload = await response.json();
+
+            expect(response.status).toBe(500);
+            expect(payload.error).toBe("Internal server error.");
+            expect(consoleErrorSpy).toHaveBeenCalled();
+        } finally {
+            if (originalSecret) {
+                process.env.JWT_SECRET = originalSecret;
+            }
+        }
+    });
+
+    it("sets Secure cookie in production mode", async () => {
+        const originalEnv = process.env.NODE_ENV;
+        process.env.NODE_ENV = "production";
+        mockFindFirst.mockResolvedValue(mockAdminUser);
+
+        try {
+            const request = createRequest({ username: "adminUser", password: "pass" });
+            const response = await POST(request);
+            const cookieHeader = response.headers.get("set-cookie");
+
+        expect(cookieHeader).toContain("Secure");
+        expect(cookieHeader.toLowerCase()).toContain("samesite=strict");
+        } finally {
+            process.env.NODE_ENV = originalEnv;
+        }
+    });
+
     // ... Test cases for error handling ...
     it("returns 500 for unexpected database errors", async () => {
         mockFindFirst.mockRejectedValue(new Error("Database connection failed"));
