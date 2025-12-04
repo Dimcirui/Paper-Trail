@@ -206,3 +206,19 @@ export async function deletePaperAction(paperId: number) {
     };
   }
 }
+
+export async function hardDeletePaperAction(paperId: number) {
+  try {
+    const actorId = await resolveActorId();
+    await prisma.$executeRaw`CALL sp_hard_delete_paper(${paperId}, ${actorId})`;
+    return { success: true };
+  } catch (error) {
+    console.error("Hard delete paper error:", error);
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to hard delete paper right now.",
+    };
+  }
+}

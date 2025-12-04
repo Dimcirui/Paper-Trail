@@ -11,6 +11,7 @@ import {
   linkGrantAction,
   unlinkGrantAction,
   deletePaperAction,
+  hardDeletePaperAction,
 } from "./actions";
 
 type Author = {
@@ -187,6 +188,30 @@ export function ManagePaperPanel({
     });
   };
 
+  const userRole =
+    (process.env.NEXT_PUBLIC_USER_ROLE ?? "viewer").toLowerCase();
+  const canHardDelete = userRole === "admin";
+
+  const handleHardDeletePaper = () => {
+    if (
+      !confirm(
+        "Hard delete removes this paper, its authorships, grants, and logs permanently. Proceed?",
+      )
+    ) {
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await hardDeletePaperAction(paper.id);
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Paper permanently removed.");
+        router.push("/dashboard");
+      }
+    });
+  };
+
   return (
     <div className="space-y-8">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -209,6 +234,16 @@ export function ManagePaperPanel({
             >
               {pending ? "Deleting..." : "Delete"}
             </button>
+            {canHardDelete && (
+              <button
+                type="button"
+                onClick={handleHardDeletePaper}
+                disabled={pending}
+                className="ml-3 rounded-full border border-red-500 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
+              >
+                {pending ? "Hard deleting..." : "Hard delete"}
+              </button>
+            )}
             <button
               type="button"
               onClick={handlePaperUpdate}

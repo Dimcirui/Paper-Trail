@@ -194,7 +194,7 @@ export async function DELETE(req: NextRequest) {
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.message }, { status: 401 });
   }
-  
+ 
   if (!hasWritePermission(auth.role)) {
     return NextResponse.json(
         { error: "Insufficient permissions." },
@@ -204,22 +204,43 @@ export async function DELETE(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
+  const hardDelete = searchParams.get("hard") === "true";
 
   if (!id) {
     return NextResponse.json({ error: "Paper ID is required." }, { status: 400 });
   }
 
+  if (hardDelete && auth.role !== "admin") {
+    return NextResponse.json(
+      { error: "Hard deletes are reserved for administrator roles." },
+      { status: 403 },
+    );
+  }
+
   try {
-    // Hardcoded actorId for now
-    const actorId = 1; 
-    
+    const configuredActorId = Number(process.env.NEXT_PUBLIC_DEFAULT_ACTOR_ID ?? 1);
+    const actorId = Number.isFinite(configuredActorId) && configuredActorId > 0
+      ? configuredActorId
+      : 1;
+
+    if (hardDelete) {
+      await prisma.$executeRaw`CALL sp_hard_delete_paper(${parseInt(id)}, ${actorId})`;
+      return NextResponse.json(
+        { message: "Paper hard deleted successfully." },
+        { status: 200 },
+      );
+    }
+
     await prisma.$executeRaw`CALL sp_soft_delete_paper(${parseInt(id)}, ${actorId})`;
 
-    return NextResponse.json({ message: "Paper soft deleted successfully." }, { status: 200 });
+    return NextResponse.json(
+      { message: "Paper soft deleted successfully." },
+      { status: 200 },
+    );
   } catch (error: unknown) {
     console.error("Failed to delete paper", error);
     return NextResponse.json(
-      { error: "Database error during soft delete." },
+      { error: "Database error during delete operation." },
       { status: 500 },
     );
   }
