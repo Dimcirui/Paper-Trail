@@ -21,6 +21,17 @@ PaperTrail is a research-publication management platform for professors, graduat
 └── README.md                  # Project overview + workflow
 ```
 
+## System prerequisites
+
+The following software must already be installed on the grader’s machine:
+
+- **Docker Desktop / Docker Engine** – Hosts the MySQL 8 container and Adminer UI. Download from https://www.docker.com/products/docker-desktop and install per the platform defaults (macOS/Linux/Windows). The compose file runs from the repo root (`5200_final_proj`) so the expected working directory is that root folder.
+- **Node.js 20.x** (LTS) – Powers the Next.js 14 application and Prisma CLI. Download from https://nodejs.org/en/download/ or install via `nvm install 20`. `npm` is bundled with Node.
+- **MySQL CLI (optional)** – Only needed if you want to query the database without Docker. Download from https://dev.mysql.com/downloads/mysql/. Otherwise use the `docker compose exec -T db mysql` command flow documented below.
+- **git** – For cloning the repo into a local folder (e.g., `~/projects/5200_final_proj`).
+
+All commands assume the repo lives in its root directory (`/path/to/5200_final_proj`). If you install Docker/Node elsewhere, adjust your PATH before running the scripts below.
+
 ## Full-stack spin-up (grading checklist)
 
 1. **Launch containers**
