@@ -62,7 +62,9 @@ All commands assume the repo lives in its root directory (`/path/to/5200_final_p
    These commands regenerate the Prisma client and push the schema into the running Dockerized MySQL instance.
 
 4. **Provision stored procedures and seed data**
-   (Ensure you are in the papertrail-app directory)
+   
+   Before this step, please ensure you are already in the papertrail-app directory.
+   
    For macOS/Linux/Windows Powershell:
    ```bash
    cat ..\database\final_submission.sql | docker compose exec -T db mysql -u root -proot
