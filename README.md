@@ -32,7 +32,7 @@ The following software must already be installed on the grader’s machine:
 
 All commands assume the repo lives in its root directory (`/path/to/5200_final_proj`). If you install Docker/Node elsewhere, adjust your PATH before running the scripts below.
 
-## Full-stack spin-up (grading checklist)
+## Full-stack spin-up
 
 1. **Launch containers**
    ```bash
@@ -42,8 +42,13 @@ All commands assume the repo lives in its root directory (`/path/to/5200_final_p
 
 2. **Prepare the frontend environment**
    ```bash
+   (For macOS/Linux/Windows Powershell)
    cd papertrail-app
    cp .env.example .env.local
+   npm install
+   (For Windows CMD)
+   cd papertrail-app
+   copy .env.example .env.local
    npm install
    ```
    - Edit `.env.local` (and `.env` if you rely on it elsewhere) and ensure `DATABASE_URL` points to `mysql://papertrail:papertrail@localhost:3307/papertrail`.
@@ -59,7 +64,10 @@ All commands assume the repo lives in its root directory (`/path/to/5200_final_p
 4. **Provision stored procedures and seed data**
    (Ensure you are in the papertrail-app directory)
    ```bash
-   cat ../database/final_submission.sql | docker compose exec -T db mysql -u root -proot
+   (For macOS/Linux/Windows Powershell)
+   cat ..\database\final_submission.sql | docker compose exec -T db mysql -u root -proot
+   (For Windos CMD)
+   type ../database/final_submission.sql | docker compose exec -T db mysql -u root -proot
    ```
    Everything—stored procedures, triggers, events, roles, and the real-world seed—is bundled in `database/final_submission.sql`. Running this single script restores the schema and demo data needed for grading. The script also generates the temporary passwords noted in the output so you can log in as any seeded user.
    Verify the data(Optional):
