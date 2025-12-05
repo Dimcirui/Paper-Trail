@@ -63,10 +63,12 @@ All commands assume the repo lives in its root directory (`/path/to/5200_final_p
 
 4. **Provision stored procedures and seed data**
    (Ensure you are in the papertrail-app directory)
+   For macOS/Linux/Windows Powershell:
    ```bash
-   (For macOS/Linux/Windows Powershell)
    cat ..\database\final_submission.sql | docker compose exec -T db mysql -u root -proot
-   (For Windos CMD)
+   ```
+   For Windows CMD:
+   ```bash
    type ../database/final_submission.sql | docker compose exec -T db mysql -u root -proot
    ```
    Everything—stored procedures, triggers, events, roles, and the real-world seed—is bundled in `database/final_submission.sql`. Running this single script restores the schema and demo data needed for grading. The script also generates the temporary passwords noted in the output so you can log in as any seeded user.
