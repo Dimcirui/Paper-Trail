@@ -41,12 +41,15 @@ All commands assume the repo lives in its root directory (`/path/to/5200_final_p
    The MySQL service maps port `3306` in the container to `3307` on the host (to avoid conflicts with any local MySQL), and Adminer is available at `http://localhost:8080` for quick inspections.
 
 2. **Prepare the frontend environment**
+   
+   For macOS/Linux/Windows Powershell:
    ```bash
-   (For macOS/Linux/Windows Powershell)
    cd papertrail-app
    cp .env.example .env.local
    npm install
-   (For Windows CMD)
+   ```
+   For Windows CMD:
+   ```bash
    cd papertrail-app
    copy .env.example .env.local
    npm install
@@ -54,14 +57,14 @@ All commands assume the repo lives in its root directory (`/path/to/5200_final_p
    - Edit `.env.local` (and `.env` if you rely on it elsewhere) and ensure `DATABASE_URL` points to `mysql://papertrail:papertrail@localhost:3307/papertrail`.
    - Set `API_AUTH_TOKEN` (used by the `/api/papers` endpoints) and any `NEXT_PUBLIC_*` variables you need for client-side demos.
 
-3. **Prisma client + schema sync**
+4. **Prisma client + schema sync**
    ```bash
    npm run prisma:generate
    npm run db:push
    ```
    These commands regenerate the Prisma client and push the schema into the running Dockerized MySQL instance.
 
-4. **Provision stored procedures and seed data**
+5. **Provision stored procedures and seed data**
    
    Before this step, please ensure you are already in the papertrail-app directory.
    
