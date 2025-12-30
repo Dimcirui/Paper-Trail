@@ -1,4 +1,4 @@
-# PaperTrail – CS 5200 Final Project
+# PaperTrail – A Publication Management Dashboard
 
 PaperTrail is a research-publication management platform for professors, graduate students, and research groups. It organizes papers, collaborators, venues, funding sources, and revision history in one relational database. The stack is:
 
