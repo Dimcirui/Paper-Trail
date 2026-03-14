@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
 }
 
 model Role {
@@ -41,6 +43,7 @@ model Paper {
   publicationDate  DateTime?
   pdfUrl           String?
   isDeleted        Boolean        @default(false)
+  embedding        Unsupported("vector(1536)")?
   primaryContactId Int
   venueId          Int?
   createdAt        DateTime       @default(now())

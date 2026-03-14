@@ -24,6 +24,8 @@ jest.mock("@/lib/prisma", () => ({
     paper: {
       findMany: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
     },
     user: {
       count: jest.fn(),
@@ -31,7 +33,10 @@ jest.mock("@/lib/prisma", () => ({
     venue: {
       count: jest.fn(),
     },
-    $executeRaw: jest.fn(),
+    activityLog: {
+      create: jest.fn(),
+    },
+    $transaction: jest.fn(),
   },
 }));
 
@@ -39,12 +44,18 @@ const mockFindMany = prisma.paper
   .findMany as jest.MockedFunction<typeof prisma.paper.findMany>;
 const mockPaperCreate = prisma.paper
   .create as jest.MockedFunction<typeof prisma.paper.create>;
+const mockPaperUpdate = prisma.paper
+  .update as jest.MockedFunction<typeof prisma.paper.update>;
+const mockPaperDelete = prisma.paper
+  .delete as jest.MockedFunction<typeof prisma.paper.delete>;
 const mockUserCount = prisma.user
   .count as jest.MockedFunction<typeof prisma.user.count>;
 const mockVenueCount = prisma.venue
   .count as jest.MockedFunction<typeof prisma.venue.count>;
-const mockExecuteRaw = prisma.$executeRaw as jest.MockedFunction<
-  typeof prisma.$executeRaw
+const mockActivityLogCreate = prisma.activityLog
+  .create as jest.MockedFunction<typeof prisma.activityLog.create>;
+const mockTransaction = prisma.$transaction as jest.MockedFunction<
+  typeof prisma.$transaction
 >;
 
 describe("/api/papers route handlers", () => {
@@ -546,7 +557,7 @@ describe("POST", () => {
   });
   describe("DELETE", () => {
     it("calls soft delete when no hard parameter is provided", async () => {
-      mockExecuteRaw.mockResolvedValue(undefined);
+      mockTransaction.mockResolvedValue([undefined, undefined]);
       const request = createRequest(
         "http://localhost/api/papers?id=12",
         { method: "DELETE" },
@@ -558,13 +569,20 @@ describe("POST", () => {
 
       expect(response.status).toBe(200);
       expect(payload.message).toMatch(/soft deleted/i);
-      expect(mockExecuteRaw).toHaveBeenCalled();
-      const template = mockExecuteRaw.mock.calls[0][0];
-      expect(template[0]).toContain("sp_soft_delete_paper");
+      expect(mockPaperUpdate).toHaveBeenCalledWith({
+        where: { id: 12 },
+        data: { isDeleted: true, status: "Withdrawn" },
+      });
+      expect(mockActivityLogCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          paperId: 12,
+          actionType: "PAPER_SOFT_DELETED",
+        }),
+      });
     });
 
     it("calls hard delete when hard=true and caller is admin", async () => {
-      mockExecuteRaw.mockResolvedValue(undefined);
+      mockPaperDelete.mockResolvedValue(undefined as never);
       const request = createRequest(
         "http://localhost/api/papers?id=13&hard=true",
         { method: "DELETE" },
@@ -576,9 +594,7 @@ describe("POST", () => {
 
       expect(response.status).toBe(200);
       expect(payload.message).toMatch(/hard deleted/i);
-      expect(mockExecuteRaw).toHaveBeenCalled();
-      const template = mockExecuteRaw.mock.calls[0][0];
-      expect(template[0]).toContain("sp_hard_delete_paper");
+      expect(mockPaperDelete).toHaveBeenCalledWith({ where: { id: 13 } });
     });
 
     it("rejects hard delete for non-admin roles", async () => {
@@ -593,7 +609,7 @@ describe("POST", () => {
 
       expect(response.status).toBe(403);
       expect(payload.error).toMatch(/hard deletes/i);
-      expect(mockExecuteRaw).not.toHaveBeenCalled();
+      expect(mockPaperDelete).not.toHaveBeenCalled();
     });
   });
 });
