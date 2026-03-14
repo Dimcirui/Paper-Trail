@@ -27,10 +27,14 @@ COPY --from=builder /app/papertrail-app/.next/static ./.next/static
 # Prisma CLI + client for migrations
 COPY --from=builder /app/papertrail-app/prisma ./prisma
 COPY --from=builder /app/papertrail-app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/papertrail-app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/papertrail-app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/papertrail-app/package.json ./package.json
+
+# Instead of copyingprisma node_modules which might miss deep dependencies,
+# we install it directly in the runner to ensure npx prisma works.
+RUN npm install prisma@6.19.0
 
 COPY papertrail-app/entrypoint.sh ./
+RUN sed -i 's/\r$//' ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
 EXPOSE 3000
