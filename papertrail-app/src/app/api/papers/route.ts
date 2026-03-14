@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClientKnownRequestError, PrismaClientValidationError } from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/prisma";
+import { generateAndSaveEmbedding } from "@/lib/embeddings";
 import { PAPER_STATUSES, type PaperStatus } from "@/lib/papers";
 import { authorizeRequest, hasWritePermission } from "./auth";
 
@@ -166,6 +167,8 @@ export async function POST(req: NextRequest) {
         venueId: payload.venueId,
       },
     });
+
+    void generateAndSaveEmbedding(paper.id, paper.title);
 
     return NextResponse.json({ paper }, { status: 201 });
   } catch (error: unknown) {
