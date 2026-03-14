@@ -9,7 +9,7 @@ describe("GET /api/health", () => {
   });
 
   it("reports database configured when DATABASE_URL is set", async () => {
-    process.env.DATABASE_URL = "mysql://user:pass@localhost:3306/papertrail";
+    process.env.DATABASE_URL = "postgresql://user:pass@localhost:5432/papertrail";
 
     const response = (await GET()) as NextResponse;
     const payload = await response.json();

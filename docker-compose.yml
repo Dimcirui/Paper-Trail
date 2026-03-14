@@ -1,18 +1,16 @@
 services:
   db:
-    image: mysql:8.0
-    container_name: papertrail-mysql
+    image: pgvector/pgvector:pg17
+    container_name: papertrail-postgres
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: papertrail
-      MYSQL_USER: papertrail
-      MYSQL_PASSWORD: papertrail
-      MYSQL_ROOT_PASSWORD: root
+      POSTGRES_DB: papertrail
+      POSTGRES_USER: papertrail
+      POSTGRES_PASSWORD: papertrail
     ports:
-      - "3307:3306"
+      - "5432:5432"
     volumes:
-      - db_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password
+      - db_data:/var/lib/postgresql/data
 
   adminer:
     image: adminer:4

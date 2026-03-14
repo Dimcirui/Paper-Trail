@@ -223,15 +223,30 @@ export async function DELETE(req: NextRequest) {
       ? configuredActorId
       : 1;
 
+    const paperId = parseInt(id);
+
     if (hardDelete) {
-      await prisma.$executeRaw`CALL sp_hard_delete_paper(${parseInt(id)}, ${actorId})`;
+      await prisma.paper.delete({ where: { id: paperId } });
       return NextResponse.json(
         { message: "Paper hard deleted successfully." },
         { status: 200 },
       );
     }
 
-    await prisma.$executeRaw`CALL sp_soft_delete_paper(${parseInt(id)}, ${actorId})`;
+    await prisma.$transaction([
+      prisma.paper.update({
+        where: { id: paperId },
+        data: { isDeleted: true, status: "Withdrawn" },
+      }),
+      prisma.activityLog.create({
+        data: {
+          paperId,
+          userId: actorId,
+          actionType: "PAPER_SOFT_DELETED",
+          actionDetail: "Soft delete requested.",
+        },
+      }),
+    ]);
 
     return NextResponse.json(
       { message: "Paper soft deleted successfully." },
