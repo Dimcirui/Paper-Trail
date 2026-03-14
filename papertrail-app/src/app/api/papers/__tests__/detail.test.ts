@@ -5,18 +5,13 @@ import {
   PrismaClientValidationError,
 } from "@prisma/client/runtime/library";
 
-const mockQuery = jest.fn();
+const mockPaperFindUnique = jest.fn();
 const mockPaperUpdate = jest.fn();
-
-jest.mock("@/lib/mysql", () => ({
-  mysqlPool: {
-    query: (...args: unknown[]) => mockQuery(...args),
-  },
-}));
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
     paper: {
+      findUnique: (...args: unknown[]) => mockPaperFindUnique(...args),
       update: (...args: unknown[]) => mockPaperUpdate(...args),
     },
   },
@@ -76,11 +71,11 @@ describe("GET /api/papers/[id]", () => {
 
     expect(response.status).toBe(400);
     expect(payload.error).toMatch(/Invalid paper ID/i);
-    expect(mockQuery).not.toHaveBeenCalled();
+    expect(mockPaperFindUnique).not.toHaveBeenCalled();
   });
 
-  it("returns 404 when no paper row is found", async () => {
-    mockQuery.mockResolvedValue([[[], [], [], []]]);
+  it("returns 404 when paper is not found", async () => {
+    mockPaperFindUnique.mockResolvedValue(null);
 
     const response = await GET(createRequest(), { params: { id: "1" } });
     const payload = await response.json();
@@ -89,45 +84,97 @@ describe("GET /api/papers/[id]", () => {
     expect(payload.error).toMatch(/Paper not found/i);
   });
 
-  it("returns overview data when stored procedure succeeds", async () => {
-    const rows = [
-      [{ id: 1, title: "Paper" }],
-      [{ authorOrder: 1, userName: "User" }],
-      [{ versionLabel: "v1", notes: "note" }],
-      [{ actionType: "PAPER_CREATED" }],
-    ];
-    mockQuery.mockResolvedValue([rows]);
+  it("returns paper overview when found", async () => {
+    mockPaperFindUnique.mockResolvedValue({
+      id: 1,
+      title: "Test Paper",
+      status: "Draft",
+      submissionDate: null,
+      publicationDate: null,
+      isDeleted: false,
+      primaryContact: { userName: "Alice" },
+      venue: { venueName: "ICML" },
+      authors: [
+        {
+          authorOrder: 1,
+          contributionNotes: "Lead author",
+          user: { userName: "Alice", email: "alice@example.com" },
+        },
+      ],
+      revisions: [
+        {
+          versionLabel: "v1",
+          notes: "Initial",
+          createdAt: new Date("2024-01-01"),
+          author: { userName: "Alice" },
+        },
+      ],
+      activityLogs: [
+        {
+          actionType: "PAPER_CREATED",
+          actionDetail: "Created",
+          timestamp: new Date("2024-01-01"),
+          user: { userName: "Alice" },
+        },
+      ],
+    });
 
     const response = await GET(createRequest(), { params: { id: "1" } });
     const payload = await response.json();
 
     expect(response.status).toBe(200);
-    expect(payload.paper).toEqual(rows[0][0]);
-    expect(payload.authors).toEqual(rows[1]);
-    expect(payload.revisions).toEqual(rows[2]);
-    expect(payload.activityLog).toEqual(rows[3]);
-    expect(mockQuery).toHaveBeenCalledWith(
-      "CALL sp_get_paper_overview(?);",
-      [1],
-    );
+    expect(payload.paper.id).toBe(1);
+    expect(payload.paper.primaryContactName).toBe("Alice");
+    expect(payload.paper.venueName).toBe("ICML");
+    expect(payload.authors).toHaveLength(1);
+    expect(payload.authors[0].userName).toBe("Alice");
+    expect(payload.authors[0].email).toBe("alice@example.com");
+    expect(payload.revisions).toHaveLength(1);
+    expect(payload.revisions[0].authorName).toBe("Alice");
+    expect(payload.activityLog).toHaveLength(1);
+    expect(payload.activityLog[0].userName).toBe("Alice");
   });
 
-  it("returns specific error when stored procedure response lacks arrays", async () => {
-    mockQuery.mockResolvedValue([{} as never]);
+  it("handles null venue and missing user references gracefully", async () => {
+    mockPaperFindUnique.mockResolvedValue({
+      id: 2,
+      title: "No Venue Paper",
+      status: "Draft",
+      submissionDate: null,
+      publicationDate: null,
+      isDeleted: false,
+      primaryContact: { userName: "Bob" },
+      venue: null,
+      authors: [],
+      revisions: [
+        {
+          versionLabel: "v1",
+          notes: null,
+          createdAt: new Date("2024-01-01"),
+          author: null,
+        },
+      ],
+      activityLogs: [
+        {
+          actionType: "PAPER_CREATED",
+          actionDetail: null,
+          timestamp: new Date("2024-01-01"),
+          user: null,
+        },
+      ],
+    });
 
-    const response = await GET(createRequest(), { params: { id: "1" } });
+    const response = await GET(createRequest(), { params: { id: "2" } });
     const payload = await response.json();
 
-    expect(response.status).toBe(500);
-    expect(payload.error).toBe("Stored procedure returned invalid format.");
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      "Stored procedure returned invalid format.",
-      { rows: {} },
-    );
+    expect(response.status).toBe(200);
+    expect(payload.paper.venueName).toBeNull();
+    expect(payload.revisions[0].authorName).toBeNull();
+    expect(payload.activityLog[0].userName).toBeNull();
   });
 
-  it("returns 500 when mysql query rejects", async () => {
-    mockQuery.mockRejectedValue(new Error("db unavailable"));
+  it("returns 500 when prisma query rejects", async () => {
+    mockPaperFindUnique.mockRejectedValue(new Error("db unavailable"));
 
     const response = await GET(createRequest(), { params: { id: "1" } });
     const payload = await response.json();
@@ -138,51 +185,6 @@ describe("GET /api/papers/[id]", () => {
       "Failed to fetch paper overview",
       expect.any(Error),
     );
-  });
-
-  it("defaults nested groups to empty arrays when missing", async () => {
-    mockQuery.mockResolvedValue([
-      [[{ id: 1, title: "Paper" }]],
-    ]);
-
-    const response = await GET(createRequest(), { params: { id: "1" } });
-    const payload = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(Array.isArray(payload.authors)).toBe(true);
-    expect(Array.isArray(payload.revisions)).toBe(true);
-    expect(Array.isArray(payload.activityLog)).toBe(true);
-    expect(payload.authors).toHaveLength(0);
-    expect(payload.revisions).toHaveLength(0);
-    expect(payload.activityLog).toHaveLength(0);
-  });
-
-  it("ignores non-array groups from stored procedure output", async () => {
-    const rows = [
-      [{ id: 1, title: "Paper" }],
-      { unexpected: true },
-      [{ versionLabel: "v1" }],
-      [{ actionType: "LOG" }],
-      [{ authorOrder: 1, userName: "User" }],
-    ];
-    mockQuery.mockResolvedValue([rows]);
-
-    const response = await GET(createRequest(), { params: { id: "1" } });
-    const payload = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(Array.isArray(payload.authors)).toBe(true);
-    expect(payload.authors).toHaveLength(1);
-  });
-
-  it("returns 404 when procedure output lacks any array groups", async () => {
-    mockQuery.mockResolvedValue([[{ unexpected: true }]]);
-
-    const response = await GET(createRequest(), { params: { id: "1" } });
-    const payload = await response.json();
-
-    expect(response.status).toBe(404);
-    expect(payload.error).toMatch(/Paper not found/i);
   });
 });
 

@@ -34,3 +34,5 @@ papertrail-app/.vercel
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+app_logs_debug.txt
+upgrade_plan.md

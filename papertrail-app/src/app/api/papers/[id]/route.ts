@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mysqlPool } from "@/lib/mysql";
 import { prisma } from "@/lib/prisma";
+import { generateAndSaveEmbedding } from "@/lib/embeddings";
 import { PAPER_STATUSES, type PaperStatus } from "@/lib/papers";
 import { authorizeRequest, hasWritePermission } from "../auth";
 import {
@@ -12,8 +12,6 @@ import { z } from "zod";
 const paramsSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
-
-type StoredProcedureRow = Record<string, unknown>;
 
 export async function GET(
   req: NextRequest,
@@ -34,39 +32,70 @@ export async function GET(
   }
 
   try {
-    const [rows] = await mysqlPool.query(
-      "CALL sp_get_paper_overview(?);",
-      [parsed.data.id],
-    );
+    const result = await prisma.paper.findUnique({
+      where: { id: parsed.data.id },
+      include: {
+        primaryContact: { select: { userName: true } },
+        venue: { select: { venueName: true } },
+        authors: {
+          select: {
+            authorOrder: true,
+            contributionNotes: true,
+            user: { select: { userName: true, email: true } },
+          },
+          orderBy: { authorOrder: "asc" },
+        },
+        revisions: {
+          select: {
+            versionLabel: true,
+            notes: true,
+            createdAt: true,
+            author: { select: { userName: true } },
+          },
+          orderBy: { createdAt: "desc" },
+        },
+        activityLogs: {
+          select: {
+            actionType: true,
+            actionDetail: true,
+            timestamp: true,
+            user: { select: { userName: true } },
+          },
+          orderBy: { timestamp: "desc" },
+        },
+      },
+    });
 
-    if (!Array.isArray(rows)) {
-      console.error("Stored procedure returned invalid format.", { rows });
-      return NextResponse.json(
-        { error: "Stored procedure returned invalid format." },
-        { status: 500 },
-      );
+    if (!result) {
+      return NextResponse.json({ error: "Paper not found." }, { status: 404 });
     }
 
-    const resultGroups = (rows as unknown[])
-      .filter((group) => Array.isArray(group))
-      .map((group) => group as StoredProcedureRow[]);
-
-    const [paperGroup = [], authors = [], revisions = [], activityLog = []] =
-      resultGroups;
-
-    const paper = paperGroup[0];
-    if (!paper) {
-      return NextResponse.json(
-        { error: "Paper not found." },
-        { status: 404 },
-      );
-    }
+    const { primaryContact, venue, authors, revisions, activityLogs, ...paperData } = result;
 
     return NextResponse.json({
-      paper,
-      authors,
-      revisions,
-      activityLog,
+      paper: {
+        ...paperData,
+        primaryContactName: primaryContact.userName,
+        venueName: venue?.venueName ?? null,
+      },
+      authors: authors.map((a) => ({
+        authorOrder: a.authorOrder,
+        userName: a.user.userName,
+        email: a.user.email,
+        contributionNotes: a.contributionNotes,
+      })),
+      revisions: revisions.map((r) => ({
+        versionLabel: r.versionLabel,
+        notes: r.notes,
+        createdAt: r.createdAt,
+        authorName: r.author?.userName ?? null,
+      })),
+      activityLog: activityLogs.map((log) => ({
+        actionType: log.actionType,
+        actionDetail: log.actionDetail,
+        timestamp: log.timestamp,
+        userName: log.user?.userName ?? null,
+      })),
     });
   } catch (error) {
     console.error("Failed to fetch paper overview", error);
@@ -157,6 +186,10 @@ export async function PATCH(
       where: { id: parsed.data.id },
       data: updateData,
     });
+
+    if (payload.data.title || payload.data.abstract !== undefined) {
+      void generateAndSaveEmbedding(updated.id, updated.title);
+    }
 
     return NextResponse.json({ paper: updated });
   } catch (error) {

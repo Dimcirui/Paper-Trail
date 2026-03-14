@@ -55,49 +55,76 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
       ? (statusFilter as PaperStatus)
       : undefined;
 
-  const whereClause: Prisma.PaperWhereInput = {
-    isDeleted: false,
-    ...(normalizedStatus ? { status: normalizedStatus } : {}),
-    ...(query
-      ? {
-          OR: [
-            { title: { contains: query } },
-            { abstract: { contains: query } },
-          ],
-        }
-      : {}),
-  };
-
-  const [systemTotal, activeDrafts, filteredTotal, papers] = await Promise.all([
+  // Stats: always use direct Prisma for counts (fast, not affected by search)
+  const [systemTotal, activeDrafts] = await Promise.all([
     prisma.paper.count({ where: { isDeleted: false } }),
     prisma.paper.count({ where: { isDeleted: false, status: "Draft" } }),
-    prisma.paper.count({ where: whereClause }),
-    prisma.paper
-      .findMany({
+  ]);
+
+  // Paper list: use /api/papers for semantic search support
+  let papers: PaperListItem[] = [];
+  let filteredTotal = 0;
+
+  try {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const apiToken = process.env.API_AUTH_TOKEN ?? process.env.NEXT_PUBLIC_API_AUTH_TOKEN ?? "";
+
+    const searchQs = new URLSearchParams();
+    if (query) searchQs.set("search", query);
+    if (normalizedStatus) searchQs.set("status", normalizedStatus);
+
+    const res = await fetch(`${appUrl}/api/papers?${searchQs.toString()}`, {
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
+        "x-user-role": role,
+      },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const allPapers: PaperListItem[] = (data.papers ?? []).map((p: Record<string, unknown>) => ({
+        id: p.id as number,
+        title: p.title as string,
+        status: p.status as string,
+        updatedAt: new Date(p.updatedAt as string),
+        venue: p.venue ? { venueName: (p.venue as { venueName: string }).venueName } : null,
+        primaryContact: p.primaryContact
+          ? { userName: (p.primaryContact as { userName: string }).userName }
+          : null,
+      }));
+      filteredTotal = allPapers.length;
+      papers = allPapers.slice(skip, skip + PAGE_SIZE);
+    }
+  } catch (err) {
+    console.error("Failed to fetch papers from API, falling back to direct query", err);
+    // Fallback: direct Prisma query (keyword only)
+    const whereClause: Prisma.PaperWhereInput = {
+      isDeleted: false,
+      ...(normalizedStatus ? { status: normalizedStatus } : {}),
+      ...(query ? { OR: [
+        { title: { contains: query, mode: "insensitive" } },
+        { abstract: { contains: query, mode: "insensitive" } },
+      ]} : {}),
+    };
+    [filteredTotal, papers] = await Promise.all([
+      prisma.paper.count({ where: whereClause }),
+      prisma.paper.findMany({
         where: whereClause,
         orderBy: { updatedAt: "desc" },
         skip,
         take: PAGE_SIZE,
-        include: {
-          venue: true,
-          primaryContact: {
-            select: { userName: true },
-          },
-        },
-      })
-      .then((rows) =>
-        rows.map<PaperListItem>((paper) => ({
-          id: paper.id,
-          title: paper.title,
-          status: paper.status,
-          updatedAt: paper.updatedAt,
-          venue: paper.venue ? { venueName: paper.venue.venueName } : null,
-          primaryContact: paper.primaryContact
-            ? { userName: paper.primaryContact.userName }
-            : null,
-        })),
-      ),
-  ]);
+        include: { venue: true, primaryContact: { select: { userName: true } } },
+      }).then((rows) => rows.map<PaperListItem>((paper) => ({
+        id: paper.id,
+        title: paper.title,
+        status: paper.status,
+        updatedAt: paper.updatedAt,
+        venue: paper.venue ? { venueName: paper.venue.venueName } : null,
+        primaryContact: paper.primaryContact ? { userName: paper.primaryContact.userName } : null,
+      }))),
+    ]);
+  }
 
   const totalPages = Math.max(1, Math.ceil(filteredTotal / PAGE_SIZE));
   const startIndex = filteredTotal === 0 ? 0 : skip + 1;

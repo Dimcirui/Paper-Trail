@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClientKnownRequestError, PrismaClientValidationError } from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/prisma";
+import { generateAndSaveEmbedding, getEmbedding } from "@/lib/embeddings";
 import { PAPER_STATUSES, type PaperStatus } from "@/lib/papers";
 import { authorizeRequest, hasWritePermission } from "./auth";
 
@@ -45,6 +46,80 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  const paperInclude = {
+    venue: true,
+    primaryContact: {
+      select: {
+        userName: true,
+        email: isRestrictedRole,
+      },
+    },
+    topics: { select: { topic: true } },
+  };
+
+  // Semantic search: query is >= 3 chars and not wrapped in quotes
+  const isSemanticSearch =
+    search.length >= 3 && !(search.startsWith('"') && search.endsWith('"'));
+
+  if (isSemanticSearch) {
+    try {
+      const queryVector = await getEmbedding(search);
+      const vectorString = `[${queryVector.join(",")}]`;
+
+      type SemanticRow = { id: number; similarity_score: number };
+      let rows: SemanticRow[];
+
+      if (!isRestrictedRole) {
+        rows = await prisma.$queryRaw<SemanticRow[]>`
+          SELECT id, (embedding <-> ${vectorString}::vector)::float AS similarity_score
+          FROM "Paper"
+          WHERE "isDeleted" = false
+            AND status = 'Published'
+            AND embedding IS NOT NULL
+          ORDER BY embedding <-> ${vectorString}::vector
+          LIMIT 20
+        `;
+      } else if (statusFilter && statusFilter !== "All") {
+        rows = await prisma.$queryRaw<SemanticRow[]>`
+          SELECT id, (embedding <-> ${vectorString}::vector)::float AS similarity_score
+          FROM "Paper"
+          WHERE "isDeleted" = ${showDeleted}
+            AND status = ${statusFilter}
+            AND embedding IS NOT NULL
+          ORDER BY embedding <-> ${vectorString}::vector
+          LIMIT 20
+        `;
+      } else {
+        rows = await prisma.$queryRaw<SemanticRow[]>`
+          SELECT id, (embedding <-> ${vectorString}::vector)::float AS similarity_score
+          FROM "Paper"
+          WHERE "isDeleted" = ${showDeleted}
+            AND embedding IS NOT NULL
+          ORDER BY embedding <-> ${vectorString}::vector
+          LIMIT 20
+        `;
+      }
+
+      const ids = rows.map((r) => r.id);
+      const scoreMap = new Map(rows.map((r) => [r.id, r.similarity_score]));
+
+      const papers = await prisma.paper.findMany({
+        where: { id: { in: ids } },
+        include: paperInclude,
+      });
+
+      const orderedPapers = ids
+        .map((id) => papers.find((p) => p.id === id))
+        .filter((p): p is NonNullable<typeof p> => p !== undefined)
+        .map((paper) => ({ ...paper, similarity_score: scoreMap.get(paper.id) }));
+
+      return NextResponse.json({ papers: orderedPapers });
+    } catch (error) {
+      console.error("Semantic search failed, falling back to keyword search", error);
+    }
+  }
+
+  // Keyword search
   const whereClause: Record<string, unknown> = {
     isDeleted: showDeleted ? true : false,
   };
@@ -59,8 +134,8 @@ export async function GET(req: NextRequest) {
 
   if (search) {
     whereClause.OR = [
-      { title: { contains: search } },
-      { abstract: { contains: search } },
+      { title: { contains: search, mode: "insensitive" } },
+      { abstract: { contains: search, mode: "insensitive" } },
     ];
   }
 
@@ -69,20 +144,7 @@ export async function GET(req: NextRequest) {
       take: 20,
       where: whereClause,
       orderBy: { updatedAt: "desc" },
-      include: {
-        venue: true,
-        primaryContact: {
-          select: { 
-            userName: true,
-            email: role === "admin" || role === "principal_investigator" ? true : false,
-          },
-        },
-        topics: {
-          select: {
-            topic: true,
-          },
-        },
-      },
+      include: paperInclude,
     });
 
     return NextResponse.json({ papers });
@@ -167,6 +229,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    void generateAndSaveEmbedding(paper.id, paper.title);
+
     return NextResponse.json({ paper }, { status: 201 });
   } catch (error: unknown) {
     console.error("Failed to create paper", error);
@@ -223,15 +287,30 @@ export async function DELETE(req: NextRequest) {
       ? configuredActorId
       : 1;
 
+    const paperId = parseInt(id);
+
     if (hardDelete) {
-      await prisma.$executeRaw`CALL sp_hard_delete_paper(${parseInt(id)}, ${actorId})`;
+      await prisma.paper.delete({ where: { id: paperId } });
       return NextResponse.json(
         { message: "Paper hard deleted successfully." },
         { status: 200 },
       );
     }
 
-    await prisma.$executeRaw`CALL sp_soft_delete_paper(${parseInt(id)}, ${actorId})`;
+    await prisma.$transaction([
+      prisma.paper.update({
+        where: { id: paperId },
+        data: { isDeleted: true, status: "Withdrawn" },
+      }),
+      prisma.activityLog.create({
+        data: {
+          paperId,
+          userId: actorId,
+          actionType: "PAPER_SOFT_DELETED",
+          actionDetail: "Soft delete requested.",
+        },
+      }),
+    ]);
 
     return NextResponse.json(
       { message: "Paper soft deleted successfully." },
