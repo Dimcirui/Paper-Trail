@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { generateAndSaveEmbedding } from "@/lib/embeddings";
 import { PAPER_STATUSES, type PaperStatus } from "@/lib/papers";
 import { authorizeRequest, hasWritePermission } from "../auth";
 import {
@@ -185,6 +186,10 @@ export async function PATCH(
       where: { id: parsed.data.id },
       data: updateData,
     });
+
+    if (payload.data.title || payload.data.abstract !== undefined) {
+      void generateAndSaveEmbedding(updated.id, updated.title);
+    }
 
     return NextResponse.json({ paper: updated });
   } catch (error) {
