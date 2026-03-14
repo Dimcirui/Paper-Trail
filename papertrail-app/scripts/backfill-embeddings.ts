@@ -8,7 +8,6 @@
  * Skips and logs any paper that fails — does not abort the whole run.
  */
 
-import "dotenv/config";
 import OpenAI from "openai";
 import { PrismaClient } from "@prisma/client";
 
