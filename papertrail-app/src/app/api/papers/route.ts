@@ -134,8 +134,8 @@ export async function GET(req: NextRequest) {
 
   if (search) {
     whereClause.OR = [
-      { title: { contains: search } },
-      { abstract: { contains: search } },
+      { title: { contains: search, mode: "insensitive" } },
+      { abstract: { contains: search, mode: "insensitive" } },
     ];
   }
 
