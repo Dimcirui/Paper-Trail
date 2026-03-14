@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { GET, POST, DELETE } from "../route";
 import { prisma } from "@/lib/prisma";
+import { getEmbedding } from "@/lib/embeddings";
 import {
   PrismaClientKnownRequestError,
   PrismaClientValidationError,
@@ -37,7 +38,13 @@ jest.mock("@/lib/prisma", () => ({
       create: jest.fn(),
     },
     $transaction: jest.fn(),
+    $queryRaw: jest.fn(),
   },
+}));
+
+jest.mock("@/lib/embeddings", () => ({
+  generateAndSaveEmbedding: jest.fn(),
+  getEmbedding: jest.fn(),
 }));
 
 const mockFindMany = prisma.paper
@@ -56,6 +63,12 @@ const mockActivityLogCreate = prisma.activityLog
   .create as jest.MockedFunction<typeof prisma.activityLog.create>;
 const mockTransaction = prisma.$transaction as jest.MockedFunction<
   typeof prisma.$transaction
+>;
+const mockQueryRaw = prisma.$queryRaw as jest.MockedFunction<
+  typeof prisma.$queryRaw
+>;
+const mockGetEmbedding = getEmbedding as jest.MockedFunction<
+  typeof getEmbedding
 >;
 
 describe("/api/papers route handlers", () => {
@@ -198,11 +211,11 @@ describe("/api/papers route handlers", () => {
     expect(whereClause).toMatchObject({ isDeleted: true });
   });
 
-  it("honors status filters and search terms", async () => {
+  it("honors status filters and quoted search terms via keyword path", async () => {
     mockFindMany.mockClear();
     mockFindMany.mockResolvedValue([]);
     const request = createRequest(
-      "http://localhost/api/papers?status=Draft&search=climate",
+      `http://localhost/api/papers?status=Draft&search=${encodeURIComponent('"climate"')}`,
       undefined,
       "admin",
     );
@@ -212,9 +225,90 @@ describe("/api/papers route handlers", () => {
     const whereClause = mockFindMany.mock.calls.pop()![0].where;
     expect(whereClause.status).toBe("Draft");
     expect(whereClause.OR).toEqual([
-      { title: { contains: "climate" } },
-      { abstract: { contains: "climate" } },
+      { title: { contains: '"climate"' } },
+      { abstract: { contains: '"climate"' } },
     ]);
+  });
+
+  it("uses keyword path when search term is shorter than 3 chars", async () => {
+    mockFindMany.mockResolvedValue([]);
+    const request = createRequest(
+      "http://localhost/api/papers?search=ai",
+      undefined,
+      "admin",
+    );
+
+    await GET(request);
+
+    expect(mockGetEmbedding).not.toHaveBeenCalled();
+    const whereClause = mockFindMany.mock.calls.pop()![0].where;
+    expect(whereClause.OR).toBeDefined();
+  });
+
+  it("returns semantic results with similarity_score for long queries", async () => {
+    const fakeVector = Array(1536).fill(0.1);
+    mockGetEmbedding.mockResolvedValue(fakeVector);
+    mockQueryRaw.mockResolvedValue([
+      { id: 1, similarity_score: 0.12 },
+      { id: 2, similarity_score: 0.25 },
+    ]);
+    mockFindMany.mockResolvedValue([
+      { id: 1, title: "Deep Learning" },
+      { id: 2, title: "Neural Networks" },
+    ]);
+
+    const request = createRequest(
+      "http://localhost/api/papers?search=neural+network",
+      undefined,
+      "admin",
+    );
+
+    const response = await GET(request);
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mockGetEmbedding).toHaveBeenCalledWith("neural network");
+    expect(mockQueryRaw).toHaveBeenCalled();
+    expect(payload.papers[0].id).toBe(1);
+    expect(payload.papers[0].similarity_score).toBe(0.12);
+    expect(payload.papers[1].similarity_score).toBe(0.25);
+  });
+
+  it("falls back to keyword search when semantic search fails", async () => {
+    mockGetEmbedding.mockRejectedValue(new Error("OpenAI unavailable"));
+    mockFindMany.mockResolvedValue([]);
+
+    const request = createRequest(
+      "http://localhost/api/papers?search=neural+network",
+      undefined,
+      "admin",
+    );
+
+    const response = await GET(request);
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mockFindMany).toHaveBeenCalled();
+    expect(payload.papers).toEqual([]);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "Semantic search failed, falling back to keyword search",
+      expect.any(Error),
+    );
+  });
+
+  it("semantic results have no similarity_score on keyword fallback", async () => {
+    mockFindMany.mockResolvedValue([{ id: 1, title: "AI paper" }]);
+    const request = createRequest(
+      `http://localhost/api/papers?search=${encodeURIComponent('"neural network"')}`,
+      undefined,
+      "admin",
+    );
+
+    const response = await GET(request);
+    const payload = await response.json();
+
+    expect(mockGetEmbedding).not.toHaveBeenCalled();
+    expect(payload.papers[0].similarity_score).toBeUndefined();
   });
   
 

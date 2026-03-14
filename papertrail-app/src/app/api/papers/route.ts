@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClientKnownRequestError, PrismaClientValidationError } from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/prisma";
-import { generateAndSaveEmbedding } from "@/lib/embeddings";
+import { generateAndSaveEmbedding, getEmbedding } from "@/lib/embeddings";
 import { PAPER_STATUSES, type PaperStatus } from "@/lib/papers";
 import { authorizeRequest, hasWritePermission } from "./auth";
 
@@ -46,6 +46,80 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  const paperInclude = {
+    venue: true,
+    primaryContact: {
+      select: {
+        userName: true,
+        email: isRestrictedRole,
+      },
+    },
+    topics: { select: { topic: true } },
+  };
+
+  // Semantic search: query is >= 3 chars and not wrapped in quotes
+  const isSemanticSearch =
+    search.length >= 3 && !(search.startsWith('"') && search.endsWith('"'));
+
+  if (isSemanticSearch) {
+    try {
+      const queryVector = await getEmbedding(search);
+      const vectorString = `[${queryVector.join(",")}]`;
+
+      type SemanticRow = { id: number; similarity_score: number };
+      let rows: SemanticRow[];
+
+      if (!isRestrictedRole) {
+        rows = await prisma.$queryRaw<SemanticRow[]>`
+          SELECT id, (embedding <-> ${vectorString}::vector)::float AS similarity_score
+          FROM "Paper"
+          WHERE "isDeleted" = false
+            AND status = 'Published'
+            AND embedding IS NOT NULL
+          ORDER BY embedding <-> ${vectorString}::vector
+          LIMIT 20
+        `;
+      } else if (statusFilter && statusFilter !== "All") {
+        rows = await prisma.$queryRaw<SemanticRow[]>`
+          SELECT id, (embedding <-> ${vectorString}::vector)::float AS similarity_score
+          FROM "Paper"
+          WHERE "isDeleted" = ${showDeleted}
+            AND status = ${statusFilter}
+            AND embedding IS NOT NULL
+          ORDER BY embedding <-> ${vectorString}::vector
+          LIMIT 20
+        `;
+      } else {
+        rows = await prisma.$queryRaw<SemanticRow[]>`
+          SELECT id, (embedding <-> ${vectorString}::vector)::float AS similarity_score
+          FROM "Paper"
+          WHERE "isDeleted" = ${showDeleted}
+            AND embedding IS NOT NULL
+          ORDER BY embedding <-> ${vectorString}::vector
+          LIMIT 20
+        `;
+      }
+
+      const ids = rows.map((r) => r.id);
+      const scoreMap = new Map(rows.map((r) => [r.id, r.similarity_score]));
+
+      const papers = await prisma.paper.findMany({
+        where: { id: { in: ids } },
+        include: paperInclude,
+      });
+
+      const orderedPapers = ids
+        .map((id) => papers.find((p) => p.id === id))
+        .filter((p): p is NonNullable<typeof p> => p !== undefined)
+        .map((paper) => ({ ...paper, similarity_score: scoreMap.get(paper.id) }));
+
+      return NextResponse.json({ papers: orderedPapers });
+    } catch (error) {
+      console.error("Semantic search failed, falling back to keyword search", error);
+    }
+  }
+
+  // Keyword search
   const whereClause: Record<string, unknown> = {
     isDeleted: showDeleted ? true : false,
   };
@@ -70,20 +144,7 @@ export async function GET(req: NextRequest) {
       take: 20,
       where: whereClause,
       orderBy: { updatedAt: "desc" },
-      include: {
-        venue: true,
-        primaryContact: {
-          select: { 
-            userName: true,
-            email: role === "admin" || role === "principal_investigator" ? true : false,
-          },
-        },
-        topics: {
-          select: {
-            topic: true,
-          },
-        },
-      },
+      include: paperInclude,
     });
 
     return NextResponse.json({ papers });
