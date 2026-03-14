@@ -2,7 +2,9 @@
 set -e
 
 echo "Running database migrations..."
-node node_modules/prisma/build/index.js migrate deploy
+# Use npx to run prisma from the local node_modules
+# We need to make sure the prisma CLI and its dependencies are available
+npx prisma migrate deploy
 
 echo "Starting Next.js server..."
 exec node server.js
