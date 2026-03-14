@@ -11,6 +11,25 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U papertrail -d papertrail"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: papertrail-app/Dockerfile
+    container_name: papertrail-app
+    restart: unless-stopped
+    env_file:
+      - ./papertrail-app/.env.production
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
 
   adminer:
     image: adminer:4
