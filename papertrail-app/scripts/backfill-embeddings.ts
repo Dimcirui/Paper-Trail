@@ -8,6 +8,10 @@
  * Skips and logs any paper that fails — does not abort the whole run.
  */
 
+import * as dotenv from "dotenv";
+import * as path from "path";
+dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
+
 import OpenAI from "openai";
 import { PrismaClient } from "@prisma/client";
 
