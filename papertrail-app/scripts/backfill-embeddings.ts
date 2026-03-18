@@ -21,8 +21,8 @@ function sleep(ms: number) {
 }
 
 async function main() {
-  const papers = await prisma.$queryRaw<{ id: number; title: string }[]>`
-    SELECT id, title FROM "Paper" WHERE embedding IS NULL AND "isDeleted" = false
+  const papers = await prisma.$queryRaw<{ id: number; title: string; abstract: string | null }[]>`
+    SELECT id, title, abstract FROM "Paper" WHERE embedding IS NULL AND "isDeleted" = false
   `;
 
   console.log(`Found ${papers.length} papers without embeddings.`);
@@ -32,9 +32,10 @@ async function main() {
 
   for (const paper of papers) {
     try {
+      const input = paper.abstract ? `${paper.title}. ${paper.abstract}` : paper.title;
       const response = await openai.embeddings.create({
         model: "text-embedding-3-small",
-        input: paper.title,
+        input,
       });
 
       const vector = response.data[0].embedding;

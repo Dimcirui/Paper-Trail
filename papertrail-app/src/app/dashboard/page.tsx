@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { canEditContent, getCurrentUserRole } from "@/lib/user";
 import { DashboardSearch, DashboardStatusFilter } from "./dashboard-search";
+import { DashboardAsk } from "./dashboard-ask";
 import { PAPER_STATUSES, type PaperStatus } from "@/lib/papers";
 import type { Prisma } from "@prisma/client";
 
@@ -180,6 +181,11 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
           </p>
         </div>
       </section>
+
+      <DashboardAsk
+        apiToken={process.env.API_AUTH_TOKEN ?? process.env.NEXT_PUBLIC_API_AUTH_TOKEN ?? ""}
+        userRole={role}
+      />
 
       <section className="space-y-4">
         <div className="flex flex-col gap-4">

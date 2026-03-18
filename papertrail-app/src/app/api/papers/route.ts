@@ -229,7 +229,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    void generateAndSaveEmbedding(paper.id, paper.title);
+    void generateAndSaveEmbedding(paper.id, paper.title, paper.abstract || undefined);
 
     return NextResponse.json({ paper }, { status: 201 });
   } catch (error: unknown) {
