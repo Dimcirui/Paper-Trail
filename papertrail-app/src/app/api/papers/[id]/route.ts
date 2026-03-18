@@ -188,7 +188,7 @@ export async function PATCH(
     });
 
     if (payload.data.title || payload.data.abstract !== undefined) {
-      void generateAndSaveEmbedding(updated.id, updated.title);
+      void generateAndSaveEmbedding(updated.id, updated.title, updated.abstract || undefined);
     }
 
     return NextResponse.json({ paper: updated });
