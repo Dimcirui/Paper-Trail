@@ -10,7 +10,7 @@
 
 import * as dotenv from "dotenv";
 import * as path from "path";
-dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
 
 import OpenAI from "openai";
 import { PrismaClient } from "@prisma/client";
