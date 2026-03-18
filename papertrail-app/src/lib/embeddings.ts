@@ -13,9 +13,11 @@ export async function getEmbedding(text: string): Promise<number[]> {
 export async function generateAndSaveEmbedding(
   paperId: number,
   title: string,
+  abstract?: string,
 ): Promise<void> {
   try {
-    const vector = await getEmbedding(title);
+    const input = abstract ? `${title}. ${abstract}` : title;
+    const vector = await getEmbedding(input);
     const vectorString = `[${vector.join(",")}]`;
 
     await prisma.$executeRaw`

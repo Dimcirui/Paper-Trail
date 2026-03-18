@@ -225,8 +225,8 @@ describe("/api/papers route handlers", () => {
     const whereClause = mockFindMany.mock.calls.pop()![0].where;
     expect(whereClause.status).toBe("Draft");
     expect(whereClause.OR).toEqual([
-      { title: { contains: '"climate"' } },
-      { abstract: { contains: '"climate"' } },
+      { title: { contains: '"climate"', mode: "insensitive" } },
+      { abstract: { contains: '"climate"', mode: "insensitive" } },
     ]);
   });
 
