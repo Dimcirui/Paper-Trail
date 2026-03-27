@@ -3,6 +3,9 @@
 # Claude Code
 .claude/
 
+# Project files
+CS 5200 Project Proposal-3.pdf
+
 # dependencies
 /node_modules
 /.pnp
