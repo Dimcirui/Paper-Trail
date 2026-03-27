@@ -28,25 +28,25 @@ export default async function AnalyticsPage() {
       _count: { _all: true },
     }),
     prisma.$queryRaw<YearSummary[]>`
-      SELECT YEAR(publicationDate) as year, COUNT(*) as count
-      FROM Paper
-      WHERE publicationDate IS NOT NULL
-      GROUP BY YEAR(publicationDate)
+      SELECT EXTRACT(YEAR FROM "publicationDate")::int as year, COUNT(*)::int as count
+      FROM "Paper"
+      WHERE "publicationDate" IS NOT NULL
+      GROUP BY EXTRACT(YEAR FROM "publicationDate")
       ORDER BY year ASC
     `,
     prisma.$queryRaw<VenueSummary[]>`
-      SELECT v.venueName as label, COUNT(p.id) as count
-      FROM Paper p
-      INNER JOIN Venue v ON v.id = p.venueId
-      GROUP BY v.id, v.venueName
+      SELECT v."venueName" as label, COUNT(p.id)::int as count
+      FROM "Paper" p
+      INNER JOIN "Venue" v ON v.id = p."venueId"
+      GROUP BY v.id, v."venueName"
       ORDER BY count DESC
       LIMIT 5
     `,
     prisma.$queryRaw<GrantSummary[]>`
-      SELECT g.grantName as label, COUNT(pg.paperId) as count
-      FROM \`Grant\` g
-      INNER JOIN PaperGrant pg ON pg.grantId = g.id
-      GROUP BY g.id, g.grantName
+      SELECT g."grantName" as label, COUNT(pg."paperId")::int as count
+      FROM "Grant" g
+      INNER JOIN "PaperGrant" pg ON pg."grantId" = g.id
+      GROUP BY g.id, g."grantName"
       ORDER BY count DESC
       LIMIT 5
     `,
