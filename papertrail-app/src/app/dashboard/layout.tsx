@@ -25,9 +25,6 @@ export default async function DashboardLayout({
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-6 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-indigo-500">
-              SunXHoC Research OS
-            </p>
             <h1 className="text-2xl font-semibold text-slate-900">
               PaperTrail Control Room
             </h1>
