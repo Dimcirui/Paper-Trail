@@ -290,7 +290,7 @@ export function AnalyticsCharts({
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">Submission pipeline</h3>
+                <h4 className="text-lg font-semibold text-slate-900">Submission pipeline</h4>
                 <p className="text-xs text-slate-500">
                   Cumulative papers at each workflow stage.
                 </p>
@@ -352,9 +352,9 @@ export function AnalyticsCharts({
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">
+                <h4 className="text-lg font-semibold text-slate-900">
                   Papers per status
-                </h3>
+                </h4>
                 <p className="text-xs text-slate-500">
                   Distribution across the active workflow.
                 </p>
@@ -386,9 +386,9 @@ export function AnalyticsCharts({
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">
+                <h4 className="text-lg font-semibold text-slate-900">
                   Publications per year
-                </h3>
+                </h4>
                 <p className="text-xs text-slate-500">
                   Accepted or camera-ready manuscripts.
                 </p>
@@ -438,9 +438,9 @@ export function AnalyticsCharts({
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">
+                <h4 className="text-lg font-semibold text-slate-900">
                   Top venues by submissions
-                </h3>
+                </h4>
                 <p className="text-xs text-slate-500">
                   Snapshot of the busiest conferences and journals.
                 </p>
@@ -485,9 +485,9 @@ export function AnalyticsCharts({
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">
+                <h4 className="text-lg font-semibold text-slate-900">
                   Journal vs Conference
-                </h3>
+                </h4>
                 <p className="text-xs text-slate-500">
                   Venue type split across submissions.
                 </p>
@@ -513,9 +513,9 @@ export function AnalyticsCharts({
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">
+                <h4 className="text-lg font-semibold text-slate-900">
                   Papers by venue ranking
-                </h3>
+                </h4>
                 <p className="text-xs text-slate-500">
                   Quality tier distribution (Q1 / A* / A).
                 </p>
@@ -554,9 +554,9 @@ export function AnalyticsCharts({
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">
+                <h4 className="text-lg font-semibold text-slate-900">
                   Time to publication
-                </h3>
+                </h4>
                 <p className="text-xs text-slate-500">
                   Days between submission and publication ({durationKpi.total} papers with both dates).
                 </p>
@@ -620,9 +620,9 @@ export function AnalyticsCharts({
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">
+                <h4 className="text-lg font-semibold text-slate-900">
                   Top contributors
-                </h3>
+                </h4>
                 <p className="text-xs text-slate-500">
                   Most prolific authors by paper count.
                 </p>
@@ -671,9 +671,9 @@ export function AnalyticsCharts({
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">
+                <h4 className="text-lg font-semibold text-slate-900">
                   Papers by institution
-                </h3>
+                </h4>
                 <p className="text-xs text-slate-500">
                   Affiliated organisations ranked by distinct paper count.
                 </p>
@@ -719,7 +719,7 @@ export function AnalyticsCharts({
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900"> Top Grants </h3>
+                <h4 className="text-lg font-semibold text-slate-900"> Top Grants </h4>
                 <p className="text-xs text-slate-500"> Most active funding sources. </p>
               </div>
             </div>
@@ -740,9 +740,9 @@ export function AnalyticsCharts({
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">
+                <h4 className="text-lg font-semibold text-slate-900">
                   Papers by research topic
-                </h3>
+                </h4>
                 <p className="text-xs text-slate-500">
                   Distribution across all active research areas.
                 </p>
