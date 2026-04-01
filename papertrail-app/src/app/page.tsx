@@ -1,11 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "PaperTrail",
+  description: "Academic manuscript management for research teams.",
+};
 
 const features = [
   {
     title: "Unified paper feed",
     desc: "Browse every manuscript across all statuses from one table. Filter, search, and open in a click.",
     icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 6h16M4 10h16M4 14h10" />
       </svg>
     ),
@@ -14,7 +20,7 @@ const features = [
     title: "Semantic search",
     desc: "Find papers by meaning, not just keywords. Powered by pgvector and OpenAI embeddings.",
     icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
       </svg>
     ),
@@ -23,7 +29,7 @@ const features = [
     title: "Analytics snapshot",
     desc: "Track submission pipelines, publication rates, venue rankings, and author productivity.",
     icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
     ),
@@ -32,7 +38,7 @@ const features = [
     title: "Role-based access",
     desc: "Admin, Principal Investigator, Contributor, and Viewer roles with fine-grained permissions.",
     icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
       </svg>
     ),
@@ -70,7 +76,7 @@ export default function Home() {
               key={f.title}
               className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
             >
-              <div className="mb-3 inline-flex rounded-lg bg-indigo-50 p-2 text-indigo-600" aria-hidden="true">
+              <div className="mb-3 inline-flex rounded-lg bg-indigo-50 p-2 text-indigo-600">
                 {f.icon}
               </div>
               <h3 className="text-sm font-semibold text-slate-900">{f.title}</h3>
