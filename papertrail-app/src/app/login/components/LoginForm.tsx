@@ -95,7 +95,7 @@ export default function LoginForm({ redirectTo = '/dashboard' }: LoginFormProps)
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-4 py-2 text-white bg-indigo-600 rounded-lg shadow-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            className="w-full px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'Authenticating...' : 'Sign In'}
           </button>
