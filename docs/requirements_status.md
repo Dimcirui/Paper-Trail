@@ -9,7 +9,7 @@
 
 ## 2. Analytics & Reporting
 
-- ⚠️ **Analytics API** – The dashboard (`src/app/dashboard/analytics/page.tsx`) issues Prisma queries directly; the required `GET /api/analytics` endpoint has not been created yet.
+- ✅ **Analytics API** – `GET /api/analytics` endpoint created at `src/app/api/analytics/route.ts`, returning status, year, venue, and grant summaries (bearer-token auth, excludes soft-deleted papers).
 - ✅ **Analytics dashboard** – `src/app/dashboard/analytics/page.tsx` + `charts.tsx` render Chart.js visualizations for status counts, publications per year, and top venues.
 
 ## 3. Robustness & Error Handling
