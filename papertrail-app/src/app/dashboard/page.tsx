@@ -147,7 +147,7 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
     <div className="space-y-6 pt-2">
 
       <section className="grid gap-3 md:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <p className="text-xs uppercase tracking-widest text-slate-500">
               Recent Manuscripts
@@ -163,7 +163,7 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
             Total manuscripts currently in the system.
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <p className="text-xs uppercase tracking-widest text-slate-500">
               Editorial Throughput
@@ -179,7 +179,7 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
             Drafts awaiting submission or assignment.
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <p className="text-xs uppercase tracking-widest text-slate-500">
               Role Permissions
@@ -232,7 +232,7 @@ export default async function DashboardHome({ searchParams }: DashboardHomeProps
           />
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
