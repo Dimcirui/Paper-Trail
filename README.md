@@ -1,5 +1,16 @@
 # PaperTrail – A Publication Management Dashboard
 
+This project was forked from a course assignment skeleton. Following the initial course submission, I performed a full-stack refactoring and integrated advanced AI capabilities. For a detailed account of the development process and technical decisions, see the [Design Notes](docs/design-note.md).
+
+**Key updates since the course submission:**
+
+- **Database migration** — MySQL → PostgreSQL with pgvector support
+- **AI integration** — RAG pipeline (semantic search + natural-language Q&A)
+- **Analytics extension** — multi-dimensional analytics dashboard
+- **DevOps** — containerised deployment and CI/CD workflow
+
+[中文版 README](README-cn.md)
+
 PaperTrail is a research-publication management platform for professors, graduate students, and research groups. It organizes papers, collaborators, venues, funding sources, and revision history in one relational database, with AI-powered semantic search and natural-language Q&A.
 
 ## Stack
