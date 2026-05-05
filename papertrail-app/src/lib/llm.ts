@@ -2,12 +2,12 @@ import OpenAI from "openai";
 
 const client = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
-  baseURL: "https://ark.cn-beijing.volces.com/api/v3",
+  baseURL: "https://api.deepseek.com",
 });
 
 export async function askLLM(systemPrompt: string, userQuestion: string): Promise<string> {
   const resp = await client.chat.completions.create({
-    model: "deepseek-v3-2-251201",
+    model: "deepseek-v4-flash",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userQuestion },

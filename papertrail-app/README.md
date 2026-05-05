@@ -8,7 +8,7 @@ PaperTrail is the SunXHoC team's research-publication management platform. This 
 - **ORM**: Prisma
 - **Database**: PostgreSQL 16 + pgvector (via Docker)
 - **Semantic search**: OpenAI `text-embedding-3-small`
-- **RAG Q&A**: DeepSeek V3 via Volcengine Ark API
+- **RAG Q&A**: DeepSeek V4 Flash via DeepSeek API
 
 ### Prerequisites
 
@@ -28,7 +28,7 @@ cp .env.example .env.local
 | `DATABASE_URL` | PostgreSQL connection string (default Docker: `postgresql://papertrail:papertrail@localhost:5432/papertrail`) |
 | `API_AUTH_TOKEN` | Bearer token for API routes |
 | `OPENAI_API_KEY` | OpenAI key for generating embeddings |
-| `DEEPSEEK_API_KEY` | Volcengine Ark API key for RAG Q&A |
+| `DEEPSEEK_API_KEY` | DeepSeek API key for RAG Q&A |
 | `NEXT_PUBLIC_APP_URL` | App base URL (default: `http://localhost:3000`) |
 | `NEXT_PUBLIC_USER_ROLE` | Default role for UI (`admin`, `principal_investigator`, `viewer`) |
 
@@ -63,7 +63,7 @@ npm run dev
 ### Features
 
 - **Semantic search**: type a natural-language query in the Dashboard search bar — papers are ranked by embedding similarity (OpenAI `text-embedding-3-small`, input: `title + abstract`). Falls back to case-insensitive keyword search if embeddings are unavailable.
-- **Ask AI (RAG)**: collapsible panel on the Dashboard. Enter a question in plain language; the system retrieves the top-5 most relevant papers via pgvector and uses DeepSeek V3 to generate a grounded answer with source citations.
+- **Ask AI (RAG)**: collapsible panel on the Dashboard. Enter a question in plain language; the system retrieves the top-5 most relevant papers via pgvector and uses DeepSeek V4 Flash to generate a grounded answer with source citations.
 - **Role-based visibility**: viewers only see Published papers; admin / principal_investigator see all statuses.
 
 ### Scripts
@@ -100,6 +100,6 @@ src/
 │       └── dashboard-search.tsx  # Search + status filter client components
 └── lib/
     ├── embeddings.ts             # OpenAI embedding generation + save
-    ├── llm.ts                    # DeepSeek V3 chat completion wrapper
+    ├── llm.ts                    # DeepSeek V4 Flash chat completion wrapper
     └── prisma.ts                 # Prisma client singleton
 ```

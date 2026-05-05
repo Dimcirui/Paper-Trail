@@ -1,204 +1,204 @@
 # Paper-Trail Design Note
 
-> 记录项目从课程作业到生产可用系统的技术选型与演进历程。
+> A record of the technical decisions and evolution of the project from a course assignment to a production-ready system.
 
 ---
 
-## 一、项目背景与起点
+## 1. Background and Origin
 
-**Paper-Trail** 起源于 CS 5200 数据库课程项目（2025-11-14），由 Hans (`hans2001`) 发起、Sheeran 参与协作，2026-03 起由 Sheeran (`Dimcirui`) 主导后续技术升级，迁移至 `Dimcirui/Paper-Trail` 仓库。
+**Paper-Trail** originated as a CS 5200 Database course project (2025-11-14), initiated by Hans (`hans2001`) with collaboration from Sheeran. From March 2026 onwards, Sheeran (`Dimcirui`) took over technical development and migrated the project to the `Dimcirui/Paper-Trail` repository.
 
-**定位**：学术论文管理仪表板（Publication Management Dashboard）。核心需求是为研究团队提供论文全生命周期管理（CRUD）、多维数据分析以及 AI 辅助检索能力。
+**Purpose**: An academic publication management dashboard. The core requirement is to provide research teams with full paper lifecycle management (CRUD), multi-dimensional analytics, and AI-assisted search.
 
-**初始技术栈（2025-11-14, commit `32cdd89`）**：
+**Initial tech stack (2025-11-14, commit `32cdd89`)**:
 
-| 层 | 技术 |
-|---|---|
-| 前端框架 | Next.js (App Router) + TypeScript |
+| Layer | Technology |
+| --- | --- |
+| Frontend | Next.js (App Router) + TypeScript |
 | CSS | Tailwind CSS + PostCSS |
 | ORM | Prisma |
-| 数据库 | MySQL（Docker Compose） |
-| 数据库直连 | `mysql2` 连接池 + 存储过程 |
-| 认证 | 无（后期加入） |
-| API 风格 | Next.js API Routes（RESTful） |
-| 代码质量 | ESLint、Husky pre-commit/pre-push hooks |
-| CI | GitHub Actions（Node.js 20、Jest + Stryker 变异测试） |
+| Database | MySQL (Docker Compose) |
+| DB access | `mysql2` connection pool + stored procedures |
+| Auth | None (added later) |
+| API style | Next.js API Routes (RESTful) |
+| Code quality | ESLint, Husky pre-commit/pre-push hooks |
+| CI | GitHub Actions (Node.js 20, Jest + Stryker mutation testing) |
 
-Prisma schema 在初始 commit 中已定义完整学术数据模型：`User`、`Paper`、`Author`、`Venue`、`Grant`、`Revision`、`ActivityLog`、`PaperAuthor`、`PaperGrant` 等。
-
----
-
-## 二、演进时间线
-
-### 阶段 1：课程骨架搭建（2025-11-14 ~ 11-17）
-
-- `32cdd89` — 创建 `papertrail-app/`，引入 Next.js + Prisma + MySQL，定义完整 schema
-- `32b771a` — 加入 `docker-compose.yml`、`database/stored_procedures.sql`（290 行存储过程）
-- `cec35f5` — 引入 Husky + GitHub Actions CI pipeline
-- `8b506a4` — 修复 MySQL 8.0 兼容性（prepared statements）
-- `1713591` — 实现软删除功能（存储过程）
-- `5486048` — 首个前端页面：DashboardPage 组件
-
-### 阶段 2：认证系统 + 页面体系（2025-11-17 ~ 11-22）
-
-- `a9405d7` — 登录功能 + 认证错误处理
-- `d40a109` — JWT 认证（`jose`）+ `UserContext` + `middleware.ts` RBAC
-- `41384eb` — 建立四大页面架构：Dashboard / Browser / Analytics / Manage
-- `d55c345` — GET papers 端点搜索与过滤
-- `99ecec1` — PATCH 端点 + ManagePage 论文编辑
-- `12b6c27` — TrashPage 回收站 + RestoreButton + 角色权限完善
-
-### 阶段 3：测试体系 + UI 完善（2025-11-23 ~ 11-24）
-
-- `7c7eebd` — 引入 Jest + Stryker，添加 `route.test.ts`、`auth.test.ts`、`detail.test.ts`，创建 `auth.ts` 模块
-- `125c1dc` — 重构认证流程，创建 `real_world_seed.sql`，引入 Chart.js 图表
-- `9a50739` — 活动流（Activity Feed）+ 需求追踪文档
-- `52a8d17` — Grant 关联/取消关联功能
-- `efbaf0c` — Analytics 图表：Grant 数据可视化
-
-### 阶段 4：代码冻结与课程提交（2025-12-02 ~ 12-04）
-
-- `1adcfae` — "code freeze"：清理测试数据文件
-- `455d486` — 生成 `final_submission.sql`（721 行完整数据库导出）
-- `d6b6a45` — 软删除确认对话框
-
-### 阶段 5：MySQL → PostgreSQL + 语义搜索（2026-03-14）
-
-这是项目最重大的技术转型，在一天内完成全部四个迁移阶段：
-
-- `b5f3769` — **数据库迁移**：Prisma provider 从 `mysql` → `postgresql`，删除 `mysql2`，Docker Compose 改用 `pgvector/pgvector:pg17`，所有 raw SQL 从 MySQL 语法改为 PostgreSQL 语法
-- `a8b4865` — **Embedding 流水线**：创建 `src/lib/embeddings.ts`（OpenAI `text-embedding-3-small`）+ `scripts/backfill-embeddings.ts`（批量回填）
-- `346dc37` — **语义搜索**：cosine 距离查询（`<->` 运算符），短查询/引号查询降级为 `ILIKE` 关键词搜索
-- `be59ee0` — **Docker 部署**：Next.js standalone 多阶段 Dockerfile，docker-compose 增加 `app` 和 `adminer` 服务
-
-### 阶段 6：RAG Q&A + DeepSeek V3（2026-03-18）
-
-- `315e6e5` — **RAG 问答**：`/api/papers/ask` 端点，创建 `src/lib/llm.ts`（DeepSeek V3 集成），前端可折叠问答面板
-- `ab4d446` — 确定使用火山引擎 Ark 端点（`deepseek-v3-2-251201`）
-
-### 阶段 7：UI 统一化 + Analytics 扩展（2026-03-27 ~ 03-31）
-
-- `db05417` — 清理残留 MySQL 语法，统一为 PostgreSQL 兼容写法
-- 12 个连续 style commits — UI 设计统一：slate 色系、rounded-2xl 圆角、重设计 landing page、SVG 图标、aria-hidden 无障碍属性
-- `cd792fa` — **Analytics 大扩展**：新增 `GET /api/analytics`（210 行，8 个数据查询），涵盖 Topic 分布、Venue 分层、周期分析、Top 贡献者、机构分布、投稿漏斗
-- `a684b23` — `GET /api/analytics` 覆盖率测试
+The Prisma schema already defined a complete academic data model in the initial commit: `User`, `Paper`, `Author`, `Venue`, `Grant`, `Revision`, `ActivityLog`, `PaperAuthor`, `PaperGrant`, etc.
 
 ---
 
-## 三、技术选型全景
+## 2. Evolution Timeline
 
-### 前端
+### Phase 1: Course Scaffolding (2025-11-14 ~ 11-17)
 
-| 维度 | 技术 | 版本 |
-|---|---|---|
-| 框架 | Next.js App Router | 16.0.3 |
-| 语言 | TypeScript | ^5 |
-| UI 渲染 | React | 19.2.0 |
-| CSS | Tailwind CSS | ^4（v4 新架构） |
-| 图表 | Chart.js + react-chartjs-2 | ^4.5.1 / ^5.3.1 |
-| 表单验证 | Zod | ^4.1.12 |
-| Toast 通知 | react-hot-toast | ^2.6.0 |
-| JWT 处理 | jose | ^6.1.2 |
-| 状态管理 | React Context（`UserContext`） | 无外部库 |
-| 数据获取 | 原生 fetch（Server + Client Components） | 无 SWR/React Query |
+- `32cdd89` — Created `papertrail-app/`, introduced Next.js + Prisma + MySQL, defined full schema
+- `32b771a` — Added `docker-compose.yml`, `database/stored_procedures.sql` (290 lines of stored procedures)
+- `cec35f5` — Introduced Husky + GitHub Actions CI pipeline
+- `8b506a4` — Fixed MySQL 8.0 compatibility (prepared statements)
+- `1713591` — Implemented soft-delete via stored procedures
+- `5486048` — First frontend page: DashboardPage component
 
-### 后端
+### Phase 2: Auth System + Page Architecture (2025-11-17 ~ 11-22)
 
-| 维度 | 技术 | 版本 |
-|---|---|---|
-| 运行时 | Node.js | 20.x LTS |
-| 框架 | Next.js API Routes（App Router `route.ts`） | 16.0.3 |
+- `a9405d7` — Login functionality + auth error handling
+- `d40a109` — JWT auth (`jose`) + `UserContext` + `middleware.ts` RBAC
+- `41384eb` — Four-page architecture: Dashboard / Browser / Analytics / Manage
+- `d55c345` — GET papers endpoint with search and filtering
+- `99ecec1` — PATCH endpoint + ManagePage paper editing
+- `12b6c27` — TrashPage + RestoreButton + role-based permission improvements
+
+### Phase 3: Test Coverage + UI Polish (2025-11-23 ~ 11-24)
+
+- `7c7eebd` — Introduced Jest + Stryker; added `route.test.ts`, `auth.test.ts`, `detail.test.ts`; created `auth.ts` module
+- `125c1dc` — Refactored auth flow, created `real_world_seed.sql`, introduced Chart.js charts
+- `9a50739` — Activity Feed + requirements tracking document
+- `52a8d17` — Grant association / disassociation functionality
+- `efbaf0c` — Analytics charts: Grant data visualization
+
+### Phase 4: Code Freeze and Course Submission (2025-12-02 ~ 12-04)
+
+- `1adcfae` — "code freeze": cleaned up test data files
+- `455d486` — Generated `final_submission.sql` (721-line full database export)
+- `d6b6a45` — Soft-delete confirmation dialog
+
+### Phase 5: MySQL → PostgreSQL + Semantic Search (2026-03-14)
+
+The most significant technical transformation in the project, completed across four migration phases in a single day:
+
+- `b5f3769` — **Database migration**: Prisma provider switched from `mysql` → `postgresql`, removed `mysql2`, Docker Compose updated to use `pgvector/pgvector:pg17`, all raw SQL migrated from MySQL to PostgreSQL syntax
+- `a8b4865` — **Embedding pipeline**: created `src/lib/embeddings.ts` (OpenAI `text-embedding-3-small`) + `scripts/backfill-embeddings.ts` (batch backfill)
+- `346dc37` — **Semantic search**: cosine distance queries using the `<->` operator; short queries and quoted queries fall back to `ILIKE` keyword search
+- `be59ee0` — **Docker deployment**: Next.js standalone multi-stage Dockerfile; docker-compose extended with `app` and `adminer` services
+
+### Phase 6: RAG Q&A + DeepSeek V3 (2026-03-18)
+
+- `315e6e5` — **RAG Q&A**: `/api/papers/ask` endpoint; created `src/lib/llm.ts` (DeepSeek V3 integration); collapsible Q&A panel in the frontend
+- `ab4d446` — Settled on Volcengine Ark endpoint (`deepseek-v3-2-251201`); later upgraded to `deepseek-v4-flash` and migrated to DeepSeek API (`api.deepseek.com`)
+
+### Phase 7: UI Unification + Analytics Expansion (2026-03-27 ~ 03-31)
+
+- `db05417` — Cleaned up residual MySQL syntax; unified all queries to PostgreSQL-compatible syntax
+- 12 consecutive style commits — UI design unification: slate color palette, `rounded-2xl` corners, redesigned landing page, SVG icons, `aria-hidden` accessibility attributes
+- `cd792fa` — **Analytics expansion**: added `GET /api/analytics` (210 lines, 8 data queries) covering topic distribution, venue tiering, cycle analysis, top contributors, institution distribution, and submission funnel
+- `a684b23` — Coverage tests for `GET /api/analytics`
+
+---
+
+## 3. Technology Landscape
+
+### Frontend
+
+| Dimension | Technology | Version |
+| --- | --- | --- |
+| Framework | Next.js App Router | 16.0.3 |
+| Language | TypeScript | ^5 |
+| UI rendering | React | 19.2.0 |
+| CSS | Tailwind CSS | ^4 (v4 new architecture) |
+| Charts | Chart.js + react-chartjs-2 | ^4.5.1 / ^5.3.1 |
+| Form validation | Zod | ^4.1.12 |
+| Toast notifications | react-hot-toast | ^2.6.0 |
+| JWT handling | jose | ^6.1.2 |
+| State management | React Context (`UserContext`) | no external library |
+| Data fetching | Native fetch (Server + Client Components) | no SWR/React Query |
+
+### Backend
+
+| Dimension | Technology | Version |
+| --- | --- | --- |
+| Runtime | Node.js | 20.x LTS |
+| Framework | Next.js API Routes (App Router `route.ts`) | 16.0.3 |
 | ORM | Prisma | ^6.19.0 |
-| 数据库 | PostgreSQL + pgvector | PG 17 |
-| API 风格 | RESTful（GET / POST / PATCH / DELETE） | — |
-| 认证 | Cookie-based JWT（jose）+ RBAC | — |
-| 输入验证 | Zod（部分端点）+ 手动校验 | — |
+| Database | PostgreSQL + pgvector | PG 17 |
+| API style | RESTful (GET / POST / PATCH / DELETE) | — |
+| Auth | Cookie-based JWT (jose) + RBAC | — |
+| Input validation | Zod (select endpoints) + manual validation | — |
 
-### AI / 向量搜索
+### AI / Vector Search
 
-| 维度 | 技术 | 详情 |
-|---|---|---|
-| Embedding 模型 | OpenAI `text-embedding-3-small` | 1536 维 |
-| 向量数据库 | pgvector（PostgreSQL 扩展） | cosine 距离 `<->` |
-| 向量字段 | `Unsupported("vector(1536)")` | 通过 `$queryRaw` 查询 |
-| LLM | DeepSeek V3（`deepseek-v3-2-251201`） | 火山引擎 Ark API |
-| LLM SDK | OpenAI SDK（兼容接口） | ^6.29.0 |
-| RAG 流程 | 问题 embedding → pgvector top-5 → DeepSeek V3 生成 | `/api/papers/ask` |
+| Dimension | Technology | Details |
+| --- | --- | --- |
+| Embedding model | OpenAI `text-embedding-3-small` | 1536 dimensions |
+| Vector database | pgvector (PostgreSQL extension) | cosine distance `<->` |
+| Vector field | `Unsupported("vector(1536)")` | queried via `$queryRaw` |
+| LLM | DeepSeek V4 Flash (`deepseek-v4-flash`) | DeepSeek API |
+| LLM SDK | OpenAI SDK (compatible interface) | ^6.29.0 |
+| RAG pipeline | question embedding → pgvector top-5 → DeepSeek V3 generation | `/api/papers/ask` |
 
-### 基础设施
+### Infrastructure
 
-| 维度 | 技术 |
-|---|---|
-| 容器化 | Docker Compose（db + app + adminer，3 服务） |
-| 数据库镜像 | `pgvector/pgvector:pg17` |
-| 应用构建 | Next.js standalone 多阶段 Dockerfile |
-| DB GUI | Adminer 4（端口 8080） |
-| CI/CD | GitHub Actions（Node 20、Jest coverage + Stryker 变异测试） |
-| 代码质量 | Husky pre-commit（lint-staged + ESLint）+ pre-push |
-| 测试框架 | Jest ^30.2.0 + ts-jest ^29.4.5 |
-| 变异测试 | Stryker Mutator ^9.4.0 |
+| Dimension | Technology |
+| --- | --- |
+| Containerization | Docker Compose (db + app + adminer, 3 services) |
+| DB image | `pgvector/pgvector:pg17` |
+| App build | Next.js standalone multi-stage Dockerfile |
+| DB GUI | Adminer 4 (port 8080) |
+| CI/CD | GitHub Actions (Node 20, Jest coverage + Stryker mutation testing) |
+| Code quality | Husky pre-commit (lint-staged + ESLint) + pre-push |
+| Test framework | Jest ^30.2.0 + ts-jest ^29.4.5 |
+| Mutation testing | Stryker Mutator ^9.4.0 |
 
 ---
 
-## 四、选型动机
+## 4. Decision Rationale
 
 ### MySQL → PostgreSQL + pgvector
 
-核心痛点（记录于 `upgrade_plan.md`）：
+Core pain point (documented in `upgrade_plan.md`):
 
-> 搜索 "neural network" 无法找到 "deep learning" 相关论文；搜索 "climate" 无法匹配 "global warming" 相关工作。
+> Searching "neural network" returns no results for "deep learning" papers; searching "climate" misses work on "global warming".
 
-关键词 `LIKE %query%` 无法捕捉语义相关性。pgvector 是 PostgreSQL-only 扩展，选择迁移到 PostgreSQL 意味着复用同一数据库实例，无需额外部署独立向量数据库（如 Pinecone、Milvus）。
+`LIKE %query%` keyword matching cannot capture semantic relatedness. pgvector is a PostgreSQL-only extension, so migrating to PostgreSQL allows the vector store to share the same database instance — no need to deploy a separate vector database such as Pinecone or Milvus.
 
 ### `text-embedding-3-small`
 
-低成本，无需自建推理服务，1536 维向量质量满足需求。
+Low cost, no self-hosted inference required, and 1536-dimensional vector quality is sufficient for the workload.
 
-### DeepSeek V3 via 火山引擎 Ark
+### DeepSeek V4 Flash via DeepSeek API
 
-国内可直接访问、高性价比，通过 OpenAI SDK 兼容接口调用，切换成本极低。
+Called via DeepSeek's own API (`api.deepseek.com`) through the OpenAI-compatible SDK interface. Highly cost-effective, and switching providers requires only a `baseURL` + `model` change.
 
-### 全栈 Next.js（无独立后端服务）
+### Full-stack Next.js (no separate backend service)
 
-前后端共享同一 Next.js 应用（API Routes 与 UI 页面并置），简化部署（单容器）、共享 TypeScript 类型定义，适合当前项目规模。
+Frontend and backend share the same Next.js application (API Routes co-located with UI pages), simplifying deployment (single container) and sharing TypeScript type definitions. This is appropriate for the current project scale.
 
-### Prisma `$queryRaw` 处理向量查询
+### Prisma `$queryRaw` for vector queries
 
-Prisma 不原生支持 pgvector 类型和运算符，向量字段声明为 `Unsupported("vector(1536)")`，所有相似度查询通过 `$queryRaw` 完成。
+Prisma does not natively support pgvector types and operators; vector fields are declared as `Unsupported("vector(1536)")` and all similarity queries are executed via `$queryRaw`.
 
-### 异步 Embedding 生成
+### Async embedding generation
 
-论文保存时异步生成 embedding，失败时静默降级为关键词搜索。务实的最小可行方案，后续可升级为 BullMQ 队列。
+Embeddings are generated asynchronously when a paper is saved; failures silently fall back to keyword search. A pragmatic minimum-viable approach that can be upgraded to a BullMQ queue later.
 
 ---
 
-## 五、当前状态与待办
+## 5. Current Status and Backlog
 
-### 已完成
+### Completed
 
-- 论文 CRUD 全生命周期（创建、编辑、详情、软删除、回收站恢复）
-- 认证与权限（JWT 登录/登出，4 种角色 RBAC：admin / principal_investigator / contributor / viewer）
-- 语义搜索（OpenAI embedding + pgvector cosine 排序，短查询降级为 ILIKE）
-- RAG Q&A（embedding 检索 top-5 → DeepSeek V3 生成答案 + 来源引用）
-- Analytics 仪表板（Phase 1 + 2.1/2.2 + 3.1 全部完成）：
-  - Topic 分布横向 Bar
-  - Venue 分层分析（Doughnut + ranking Bar）
-  - 提交到发表周期分析（KPI 卡片 + Line chart）
-  - Top 10 贡献者 + Top 10 机构分布
-  - 投稿漏斗（Draft → Submitted → ... → Published 转化率）
-- Docker 部署（PG + App + Adminer 完整 compose）
-- CI/CD（GitHub Actions：Jest coverage + Stryker 变异测试）
-- UI 统一化（slate 色系、rounded-2xl 圆角、SVG 图标、aria-hidden 无障碍）
+- Full paper CRUD lifecycle (create, edit, detail view, soft-delete, trash restore)
+- Auth and permissions (JWT login/logout, 4-role RBAC: admin / principal_investigator / contributor / viewer)
+- Semantic search (OpenAI embedding + pgvector cosine ranking; short queries fall back to ILIKE)
+- RAG Q&A (embedding retrieval of top-5 → DeepSeek V3 answer generation + source citations)
+- Analytics dashboard (Phase 1 + 2.1/2.2 + 3.1 complete):
+  - Topic distribution horizontal bar
+  - Venue tiering analysis (Doughnut + ranking bar)
+  - Submission-to-publication cycle analysis (KPI cards + line chart)
+  - Top 10 contributors + Top 10 institution distribution
+  - Submission funnel (Draft → Submitted → … → Published conversion rate)
+- Docker deployment (PG + App + Adminer full compose)
+- CI/CD (GitHub Actions: Jest coverage + Stryker mutation testing)
+- UI unification (slate color palette, `rounded-2xl` corners, SVG icons, `aria-hidden` accessibility)
 
-### 待做
+### Backlog
 
-| 优先级 | 项目 | 类别 |
-|---|---|---|
-| 中 | Analytics 2.3：每篇论文平均作者数（按年） | Analytics Phase 2 |
-| 中 | Analytics 3.2：各阶段平均停留时间（利用 ActivityLog 相邻 status 时间差） | Analytics Phase 3 |
-| 低 | Analytics 3.3：Stale Draft 监控面板 | Analytics Phase 3 |
-| 低 | Analytics 4.1：研究方向聚类（k-means on embeddings） | Analytics Phase 4 - AI |
-| 低 | Analytics 4.2：Topic 相关性热力图 | Analytics Phase 4 - AI |
-| 低 | Analytics 4.3：搜索 + analytics 联动 | Analytics Phase 4 - AI |
-| 中 | Grant 独立管理 UI（目前仅在 manage 视图中关联，缺少独立增删改查界面） | CRUD 完善 |
-| 中 | 全量 Zod 验证（当前仅部分端点使用 Zod，其余手动校验） | 健壮性 |
+| Priority | Item | Category |
+| --- | --- | --- |
+| Medium | Analytics 2.3: average authors per paper (by year) | Analytics Phase 2 |
+| Medium | Analytics 3.2: average time-in-stage (using adjacent `ActivityLog` status timestamps) | Analytics Phase 3 |
+| Low | Analytics 3.3: stale draft monitoring panel | Analytics Phase 3 |
+| Low | Analytics 4.1: research direction clustering (k-means on embeddings) | Analytics Phase 4 – AI |
+| Low | Analytics 4.2: topic correlation heatmap | Analytics Phase 4 – AI |
+| Low | Analytics 4.3: search + analytics cross-linking | Analytics Phase 4 – AI |
+| Medium | Grant management UI (currently only associable inside the Manage view; no standalone CRUD) | CRUD completeness |
+| Medium | Full Zod validation coverage (currently only select endpoints use Zod; others rely on manual validation) | Robustness |
